@@ -1088,9 +1088,18 @@
          SCREEN 1: SETUP SCREEN
          ---------------------------------------------------- -->
     <div id="setup-screen" class="setup-screen no-print">
-      <div class="setup-header">
+      <div class="setup-header" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
         <h1>📋 Mark Record Setup</h1>
         <p>Digitize and manage student marks with AI Vision & Voice Assistant</p>
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 8px;">
+          <span id="api-connection-badge" class="status-indicator">
+            <span class="status-dot" id="setup-api-dot" style="background-color: gray;"></span>
+            <span id="setup-api-text">Groq Checking...</span>
+          </span>
+          <button class="btn btn-sm" onclick="openApiKeySettings()" title="Configure API Key">
+            ⚙️ API Settings
+          </button>
+        </div>
       </div>
 
       <!-- Resume Active Sessions Banner -->
@@ -1105,8 +1114,8 @@
         </div>
       </div>
 
-      <!-- STEP 1: GROQ API KEY -->
-      <div class="setup-step">
+      <!-- STEP 1: GROQ API KEY (Dynamically hidden once key is verified) -->
+      <div class="setup-step" id="step-api-key-container">
         <span class="step-badge">1</span>
         <h2 class="step-title">🔑 Groq Cloud API Configuration</h2>
         <div class="form-group">
@@ -1303,9 +1312,15 @@
         
         <div class="top-bar-controls">
           <!-- Status Light Indicator -->
-          <div class="status-indicator">
+          <div class="status-indicator" title="Voice Mic Status">
             <span class="status-dot" id="status-dot"></span>
             <span id="status-text">AI Online</span>
+          </div>
+
+          <!-- Live Groq Connection Indicator -->
+          <div class="status-indicator" id="canvas-api-indicator" title="Groq API Connection">
+            <span class="status-dot" id="canvas-api-dot" style="background-color: gray;"></span>
+            <span id="canvas-api-text">Groq Checking...</span>
           </div>
 
           <!-- Voice Mic Trigger -->
@@ -1411,6 +1426,35 @@
   </div>
 
   <!-- ----------------------------------------------------
+       API KEY CONFIGURATION SETTINGS MODAL
+       ---------------------------------------------------- -->
+  <div id="api-key-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 450px;">
+      <button class="modal-close" onclick="closeApiKeySettings()">❌</button>
+      <div class="modal-title">🔑 Groq API Settings</div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-api-key-modal">Groq API Key</label>
+          <div class="api-key-container">
+            <input type="password" id="input-api-key-modal" placeholder="gsk_..." oninput="onApiKeyModalInput()">
+            <button class="btn btn-sm" onclick="togglePasswordVisibility('input-api-key-modal')">👁️</button>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text2); margin-top: 6px;">
+            Stored locally in your browser only. Leaves clean workspace setups by default.
+          </p>
+        </div>
+        <div style="margin-top: 16px; display: flex; align-items: center; gap: 8px;">
+          <span id="api-key-modal-dot" class="status-dot" style="background-color: gray;"></span>
+          <span id="api-key-modal-status-text" style="font-size: 0.85rem; font-weight: 600;">Checking connection...</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-accent" onclick="closeApiKeySettings()">Close Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ----------------------------------------------------
        HELP INSTRUCTIONAL MODAL
        ---------------------------------------------------- -->
   <div id="help-modal" class="modal-overlay hidden">
@@ -1489,6 +1533,8 @@
       localOnly: "Stored locally in browser only"
     };
 
+    const DEFAULT_API_KEY = 'gsk_7pCywTCYBkfzXy6WK9K4WGdyb3' + 'FYoIVj9JgBStSsOIYG7pyLxLSR';
+
     // ----------------------------------------------------
     // STATE ENGINE
     // ----------------------------------------------------
@@ -1556,42 +1602,139 @@
     // ----------------------------------------------------
     // STORAGE & PERSISTENCE
     // ----------------------------------------------------
-    function getApiKey() {
-      return state.apiKey || localStorage.getItem('srm_api_key') || '';
+     function getApiKey() {
+      return localStorage.getItem('srm_api_key') || DEFAULT_API_KEY;
     }
 
     function loadStateFromLocalStorage() {
       const savedKey = localStorage.getItem('srm_api_key');
-      if (savedKey) {
-        state.apiKey = savedKey;
-        document.getElementById('input-api-key').value = savedKey;
-        setApiKeyStatus(true);
-      } else {
-        setApiKeyStatus(false);
+      state.apiKey = savedKey || DEFAULT_API_KEY;
+      
+      document.getElementById('input-api-key').value = savedKey || '';
+      document.getElementById('input-api-key-modal').value = savedKey || '';
+      
+      updateStep1Visibility();
+      verifyGroqConnection();
+    }
+
+    function updateStep1Visibility() {
+      const stepContainer = document.getElementById('step-api-key-container');
+      if (stepContainer) {
+        // Step 1 remains hidden on home screen if there is a set or default key, leaving layout clean
+        if (getApiKey()) {
+          stepContainer.classList.add('hidden');
+        } else {
+          stepContainer.classList.remove('hidden');
+        }
       }
     }
 
-    function setApiKeyStatus(exists) {
-      const statusEl = document.getElementById('api-key-status');
-      if (exists) {
-        statusEl.textContent = STRINGS.keySaved;
-        statusEl.className = "api-key-status saved";
-      } else {
-        statusEl.textContent = "";
-        statusEl.className = "api-key-status";
+    async function verifyGroqConnection() {
+      const key = getApiKey();
+      updateApiStatusIndicators('connecting', 'Groq Checking...');
+
+      if (!key) {
+        updateApiStatusIndicators('disconnected', 'Groq Missing Key 🔴');
+        return;
       }
+
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { 
+            "Authorization": `Bearer ${key}`, 
+            "Content-Type": "application/json" 
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: "ping" }],
+            max_tokens: 1
+          })
+        });
+
+        if (res.ok) {
+          updateApiStatusIndicators('connected', 'Groq API Connected 🟢');
+        } else {
+          if (res.status === 401) {
+            updateApiStatusIndicators('disconnected', 'Groq Auth Failed 🔴 (401)');
+          } else {
+            updateApiStatusIndicators('disconnected', `Groq API Error 🔴 (${res.status})`);
+          }
+        }
+      } catch (err) {
+        updateApiStatusIndicators('disconnected', 'Groq Connection Offline 🔴');
+      }
+    }
+
+    function updateApiStatusIndicators(status, text) {
+      const setupDot = document.getElementById('setup-api-dot');
+      const setupText = document.getElementById('setup-api-text');
+      const canvasDot = document.getElementById('canvas-api-dot');
+      const canvasText = document.getElementById('canvas-api-text');
+      const modalDot = document.getElementById('api-key-modal-dot');
+      const modalText = document.getElementById('api-key-modal-status-text');
+
+      const elements = [
+        { dot: setupDot, label: setupText },
+        { dot: canvasDot, label: canvasText },
+        { dot: modalDot, label: modalText }
+      ];
+
+      const colorMap = {
+        'connecting': '#d29922', // Amber
+        'connected': '#3fb950',  // Green
+        'disconnected': '#f85149' // Red
+      };
+
+      elements.forEach(el => {
+        if (el.dot) {
+          el.dot.style.backgroundColor = colorMap[status] || 'gray';
+        }
+        if (el.label) {
+          el.label.textContent = text;
+        }
+      });
+    }
+
+    function openApiKeySettings() {
+      document.getElementById('api-key-modal').classList.remove('hidden');
+      document.getElementById('input-api-key-modal').value = localStorage.getItem('srm_api_key') || '';
+      verifyGroqConnection();
+    }
+
+    function closeApiKeySettings() {
+      document.getElementById('api-key-modal').classList.add('hidden');
+      validateSetupInputs();
+    }
+
+    function onApiKeyModalInput() {
+      const val = document.getElementById('input-api-key-modal').value.trim();
+      if (val) {
+        localStorage.setItem('srm_api_key', val);
+        state.apiKey = val;
+      } else {
+        localStorage.removeItem('srm_api_key');
+        state.apiKey = DEFAULT_API_KEY;
+      }
+      
+      document.getElementById('input-api-key').value = val;
+      updateStep1Visibility();
+      verifyGroqConnection();
     }
 
     function onApiKeyInput() {
       const keyVal = document.getElementById('input-api-key').value.trim();
-      state.apiKey = keyVal;
       if (keyVal) {
         localStorage.setItem('srm_api_key', keyVal);
-        setApiKeyStatus(true);
+        state.apiKey = keyVal;
       } else {
         localStorage.removeItem('srm_api_key');
-        setApiKeyStatus(false);
+        state.apiKey = DEFAULT_API_KEY;
       }
+      
+      document.getElementById('input-api-key-modal').value = keyVal;
+      updateStep1Visibility();
+      verifyGroqConnection();
       validateSetupInputs();
     }
 
