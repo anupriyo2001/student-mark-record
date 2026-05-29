@@ -1253,8 +1253,8 @@
           ⬇ Install App
         </button>
         
-        <button class="btn btn-accent btn-sm hidden" id="btn-return-setup" onclick="returnToSetup()" title="Return to Setup Configurations">
-          ⚙️ Settings
+        <button class="btn btn-accent btn-sm hidden" id="btn-return-setup" onclick="returnToSetup()" title="Return to Setup Home Page">
+          🏠 Return to Home
         </button>
       </div>
     </div>
@@ -2671,7 +2671,7 @@
     }
 
     function returnToSetup() {
-      openConfirmModal("Settings Configuration / সেটআপ এডিটর", "Return to setup screen? Voice capturing will pause.", () => {
+      openConfirmModal("Return to Home Screen / হোম স্ক্রীন", "Return to the home setup screen? Voice capturing will pause.", () => {
         closeConfirmModal();
         state.view = 'setup';
         if (recognition) recognition.stop();
