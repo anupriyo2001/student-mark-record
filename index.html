@@ -1,0 +1,3021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📋 Student Mark Record Management App</title>
+  <!-- Load SheetJS for Excel Exports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <style>
+    /* ----------------------------------------------------
+       PREMIUM DESIGN SYSTEM (COLORS, TYPOGRAPHY, THEME)
+       ---------------------------------------------------- */
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2128;
+      --accent: #58a6ff;
+      --accent-dim: rgba(88, 166, 255, 0.15);
+      --green: #3fb950;
+      --green-dim: rgba(63, 185, 80, 0.15);
+      --amber: #d29922;
+      --amber-dim: rgba(210, 153, 34, 0.15);
+      --red: #f85149;
+      --red-dim: rgba(248, 81, 73, 0.15);
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --text3: #484f58;
+      --border: #30363d;
+      --border2: #21262d;
+      --glass: rgba(22, 27, 34, 0.8);
+      --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    /* Light Theme Overrides (For Standard Print View & Browser Print) */
+    @media print {
+      :root {
+        --bg: #ffffff;
+        --bg2: #f6f8fa;
+        --bg3: #ffffff;
+        --text: #24292f;
+        --text2: #57606a;
+        --text3: #8c959f;
+        --border: #d0d7de;
+        --border2: #d8dee4;
+        --accent: #0969da;
+      }
+      body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-header {
+        display: block !important;
+      }
+      .spreadsheet-container {
+        height: auto !important;
+        overflow: visible !important;
+      }
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+      }
+      th, td {
+        border: 1px solid #000 !important;
+        padding: 6px !important;
+        color: #000 !important;
+        background: transparent !important;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* Custom Webkit Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text3);
+    }
+
+    /* ----------------------------------------------------
+       KEYFRAME ANIMATIONS
+       ---------------------------------------------------- */
+    @keyframes pulseRed {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.6); }
+      50% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
+    }
+    @keyframes pulseBlue {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.6); }
+      50% { box-shadow: 0 0 0 8px rgba(88, 166, 255, 0); }
+    }
+    @keyframes flashGreen {
+      0% { background: rgba(63, 185, 80, 0.35); }
+      100% { background: transparent; }
+    }
+    @keyframes flashAmber {
+      0% { background: rgba(210, 153, 34, 0.35); }
+      100% { background: transparent; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fadeIn {
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* ----------------------------------------------------
+       LAYOUT CONTAINERS
+       ---------------------------------------------------- */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Banner Messages */
+    .banner {
+      padding: 10px 16px;
+      text-align: center;
+      font-weight: 500;
+      font-size: 0.9rem;
+      z-index: 1000;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    .banner-green {
+      background-color: var(--green-dim);
+      border-bottom: 1px solid var(--green);
+      color: var(--green);
+    }
+    .banner-amber {
+      background-color: var(--amber-dim);
+      border-bottom: 1px solid var(--amber);
+      color: var(--amber);
+    }
+    .banner-red {
+      background-color: var(--red-dim);
+      border-bottom: 1px solid var(--red);
+      color: var(--red);
+    }
+
+    /* ----------------------------------------------------
+       SCREEN 1: SETUP VIEW
+       ---------------------------------------------------- */
+    .setup-screen {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 24px;
+      width: 100%;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .setup-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .setup-header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .setup-header p {
+      color: var(--text2);
+      font-size: 1.1rem;
+    }
+
+    /* Resume Previous Sessions Bar */
+    .resume-bar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .resume-info {
+      flex: 1;
+    }
+    .resume-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .resume-meta {
+      font-size: 0.85rem;
+      color: var(--text2);
+    }
+    .resume-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Stepper cards */
+    .setup-step {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .step-badge {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 700;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-subtitle {
+      font-size: 0.85rem;
+      color: var(--text2);
+      margin-top: -12px;
+      margin-bottom: 16px;
+    }
+
+    /* Inputs & Forms */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text2);
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
+    }
+    input::placeholder, textarea::placeholder {
+      color: var(--text3);
+    }
+
+    .api-key-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .api-key-status {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .api-key-status.saved {
+      color: var(--green);
+    }
+
+    /* Options Tabs for Student Input */
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+      gap: 8px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text2);
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      padding: 8px 0;
+    }
+
+    /* AI Vision Upload styles */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--bg3);
+      transition: border-color 0.2s;
+      position: relative;
+    }
+    .upload-zone:hover {
+      border-color: var(--accent);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-zone p {
+      font-size: 0.95rem;
+      color: var(--text2);
+      margin-top: 8px;
+    }
+
+    /* Student Preview List Table */
+    .student-preview-table-container {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-top: 12px;
+    }
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+    .preview-table th {
+      background: var(--bg3);
+      padding: 8px 12px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+    }
+    .preview-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-table tr:last-child td {
+      border-bottom: none;
+    }
+    .preview-table tr.cell-error td {
+      background-color: rgba(248, 81, 73, 0.08);
+    }
+    .badge-error {
+      background: var(--red);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Vision Confirm Panel */
+    .vision-confirm-panel {
+      background: rgba(88, 166, 255, 0.05);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--border2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: var(--border);
+      border-color: var(--text3);
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: transparent;
+    }
+    .btn-accent:hover {
+      background: #79b6ff;
+      transform: translateY(-1px);
+    }
+    .btn-accent:disabled {
+      background: var(--text3);
+      color: var(--text2);
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-green {
+      background: var(--green);
+      color: white;
+      border-color: transparent;
+    }
+    .btn-green:hover {
+      background: #4cd160;
+    }
+    .btn-red {
+      background: var(--red);
+      color: white;
+      border-color: transparent;
+    }
+    .btn-red:hover {
+      background: #ff6e67;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    /* Large Start Button Container */
+    .start-container {
+      margin-top: 32px;
+      text-align: center;
+      position: relative;
+    }
+    .btn-large {
+      padding: 16px 36px;
+      font-size: 1.15rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 15px rgba(88, 166, 255, 0.25);
+    }
+
+    /* Tooltip display */
+    .tooltip-text {
+      visibility: hidden;
+      width: 280px;
+      background-color: var(--bg2);
+      color: var(--text);
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+    .start-container:hover .tooltip-text.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* ----------------------------------------------------
+       SCREEN 2: CANVAS / SPREADSHEET VIEW
+       ---------------------------------------------------- */
+    .canvas-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* A) STICKY TOP BAR */
+    .top-bar {
+      height: 52px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .app-brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .session-indicator {
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 600;
+      background: var(--accent-dim);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .top-bar-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* AI STATUS INDICATOR */
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg3);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: gray;
+    }
+    .status-dot.listening {
+      background: var(--red);
+      animation: pulseRed 1.5s infinite;
+    }
+    .status-dot.speaking {
+      background: var(--accent);
+      animation: pulseBlue 1.5s infinite;
+    }
+    .status-dot.online {
+      background: var(--green);
+    }
+    .status-dot.paused {
+      background: #8b949e;
+    }
+
+    .mic-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mic-btn.active {
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+    }
+    .mic-btn.inactive {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+    }
+
+    /* B) SPREADSHEET CANVAS */
+    .spreadsheet-container {
+      flex: 1;
+      height: 65vh;
+      overflow-y: auto;
+      background: var(--bg);
+      position: relative;
+    }
+    .marks-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+    .marks-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg2);
+      box-shadow: 0 1px 0 var(--border);
+    }
+    .marks-table th {
+      padding: 10px 16px;
+      color: var(--text2);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .marks-table tr {
+      height: 44px;
+      border-bottom: 1px solid var(--border2);
+      transition: border 0.2s, background 0.2s;
+    }
+    .marks-table tr:nth-child(odd) {
+      background: var(--bg2);
+    }
+    .marks-table tr:nth-child(even) {
+      background: var(--bg3);
+    }
+    .marks-table tr:hover {
+      background: rgba(88, 166, 255, 0.02);
+    }
+
+    /* Table cells */
+    .marks-table td {
+      padding: 8px 16px;
+      position: relative;
+    }
+    .cell-roll {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 700;
+      width: 80px;
+    }
+    .cell-name {
+      font-weight: 500;
+    }
+    .cell-editable {
+      cursor: text;
+      transition: background 0.15s;
+    }
+    .cell-editable:hover {
+      background: rgba(88, 166, 255, 0.05);
+    }
+    .cell-editable:hover::after {
+      content: '✎';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      color: var(--text3);
+    }
+    .cell-editable input {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: calc(100% - 4px);
+      height: calc(100% - 4px);
+      background: var(--bg3);
+      border: 2px solid var(--accent);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 0 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+
+    /* ROW STATES */
+    .tr-empty {
+      color: var(--text3);
+      background: transparent;
+      border-style: dashed;
+    }
+    .tr-targeted {
+      border-left: 4px solid var(--accent) !important;
+      background: rgba(88, 166, 255, 0.05) !important;
+    }
+    .tr-conflict {
+      border-left: 4px solid var(--amber) !important;
+      background: rgba(210, 153, 34, 0.05) !important;
+    }
+    .flash-green {
+      animation: flashGreen 1.5s ease-out;
+    }
+    .flash-amber {
+      animation: flashAmber 1.5s ease-out;
+    }
+
+    /* Status column badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-badge.recorded {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+    .status-badge.pending {
+      background: var(--text3);
+      color: var(--text2);
+    }
+    .status-badge.conflict {
+      background: var(--amber-dim);
+      color: var(--amber);
+      border: 1px solid rgba(210, 153, 34, 0.3);
+    }
+    .badge-edited {
+      font-size: 0.65rem;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 6px;
+    }
+
+    /* Floating Jump Button */
+    .jump-btn {
+      position: absolute;
+      bottom: 16px;
+      right: 24px;
+      z-index: 50;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      display: none;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .jump-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    /* TABLE FOOTER */
+    .table-footer {
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 12px 24px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text2);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    }
+
+    /* C) CHAT PANEL */
+    .chat-panel {
+      height: 30vh;
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chat-panel.collapsed {
+      height: 48px;
+    }
+    .chat-header {
+      height: 48px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      background: var(--bg3);
+    }
+    .chat-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chat-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .collapse-btn {
+      background: none;
+      border: none;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    /* Messages Scroll list */
+    .chat-history {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-bubble {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .chat-bubble-user {
+      align-self: flex-end;
+      background-color: var(--accent-dim);
+      color: var(--text);
+      border-bottom-right-radius: 2px;
+      border: 1px solid rgba(88, 166, 255, 0.2);
+    }
+    .chat-bubble-ai {
+      align-self: flex-start;
+      background-color: var(--bg3);
+      color: var(--text);
+      border-bottom-left-radius: 2px;
+      border: 1px solid var(--border);
+    }
+    .chat-interim {
+      align-self: flex-end;
+      color: var(--text2);
+      font-style: italic;
+      font-size: 0.85rem;
+      padding: 4px 8px;
+    }
+
+    /* Confirm Bar from AI actions */
+    .ai-confirm-bar {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    /* Chat input controls */
+    .chat-input-bar {
+      padding: 12px 16px;
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .chat-input-bar input[type="text"] {
+      flex: 1;
+      background: var(--bg);
+    }
+
+    /* Real-Time Floating Summary Card */
+    .floating-summary-card {
+      position: fixed;
+      bottom: calc(30vh + 16px);
+      right: 24px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+      z-index: 80;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 220px;
+      pointer-events: none;
+      transition: bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chat-panel.collapsed ~ .floating-summary-card {
+      bottom: 64px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .summary-val {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ----------------------------------------------------
+       MODALS, OVERLAYS & TOASTS
+       ---------------------------------------------------- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .modal-body {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .modal-body ol {
+      padding-left: 20px;
+      margin: 12px 0;
+    }
+    .modal-body li {
+      margin-bottom: 8px;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    /* Toasts */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .toast {
+      background: var(--bg2);
+      border-left: 4px solid var(--accent);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    .toast-green { border-left-color: var(--green); }
+    .toast-amber { border-left-color: var(--amber); }
+    .toast-red { border-left-color: var(--red); }
+
+    /* ----------------------------------------------------
+       RESPONSIVE DESIGN (SCREENS <= 768PX)
+       ---------------------------------------------------- */
+    @media (max-width: 768px) {
+      /* Hide spreadsheet percent column */
+      .col-pct {
+        display: none !important;
+      }
+      
+      /* Chat Panel Full Overlay Drawer */
+      .chat-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 50vh;
+        z-index: 200;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+      }
+      .chat-panel.collapsed {
+        height: 48px;
+      }
+      .spreadsheet-container {
+        height: calc(100vh - 100px);
+      }
+      .floating-summary-card {
+        display: none !important;
+      }
+      .chat-input-bar {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Banner (Offline Notification / Keys Warning) -->
+  <div id="app-banner" class="banner hidden no-print"></div>
+
+  <div class="app-container">
+
+    <!-- ----------------------------------------------------
+         SCREEN 1: SETUP SCREEN
+         ---------------------------------------------------- -->
+    <div id="setup-screen" class="setup-screen no-print">
+      <div class="setup-header">
+        <h1>📋 Mark Record Setup</h1>
+        <p>Digitize and manage student marks with AI Vision & Voice Assistant</p>
+      </div>
+
+      <!-- Resume Active Sessions Banner -->
+      <div id="resume-container" class="resume-bar hidden">
+        <div class="resume-info">
+          <div class="resume-title" id="resume-title">Resume Active Session</div>
+          <div class="resume-meta" id="resume-meta">Details of the active session</div>
+        </div>
+        <div class="resume-actions">
+          <button class="btn btn-accent btn-sm" onclick="resumeSavedSession()">Resume</button>
+          <button class="btn btn-red btn-sm" onclick="clearSelectedSavedSession()">Delete</button>
+        </div>
+      </div>
+
+      <!-- STEP 1: GROQ API KEY -->
+      <div class="setup-step">
+        <span class="step-badge">1</span>
+        <h2 class="step-title">🔑 Groq Cloud API Configuration</h2>
+        <div class="form-group">
+          <label for="input-api-key">Groq API Key</label>
+          <div class="api-key-container">
+            <input type="password" id="input-api-key" placeholder="gsk_..." oninput="onApiKeyInput()">
+            <button class="btn btn-sm" onclick="togglePasswordVisibility('input-api-key')">👁️</button>
+            <span id="api-key-status" class="api-key-status"></span>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text2); margin-top: 6px;">
+            Stored locally in your browser's localStorage. Required for AI Vision parsing and Voice understanding.
+          </p>
+        </div>
+      </div>
+
+      <!-- STEP 2: SESSION SETTINGS -->
+      <div class="setup-step">
+        <span class="step-badge">2</span>
+        <h2 class="step-title">🏫 School & Class Details</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-session">Session (Academic Year) *</label>
+            <input type="text" id="input-session" placeholder="e.g. 2026-2027" required oninput="validateSetupInputs()">
+          </div>
+          <div class="form-group">
+            <label for="input-class">Class *</label>
+            <input type="text" id="input-class" placeholder="e.g. 7, VII, 10" required oninput="validateSetupInputs()">
+          </div>
+          <div class="form-group">
+            <label for="input-section">Section *</label>
+            <input type="text" id="input-section" placeholder="e.g. A, B, C" required oninput="validateSetupInputs()">
+          </div>
+          <div class="form-group">
+            <label for="input-total-students">Total Students *</label>
+            <input type="number" id="input-total-students" placeholder="e.g. 35" min="1" max="200" required oninput="validateSetupInputs()">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: EXAM SETTINGS -->
+      <div class="setup-step">
+        <span class="step-badge">3</span>
+        <h2 class="step-title">📝 Examination Configuration</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-exam">Exam Title *</label>
+            <select id="input-exam" onchange="validateSetupInputs()">
+              <option value="1st Exam">1st Exam</option>
+              <option value="2nd Exam">2nd Exam</option>
+              <option value="3rd Exam">3rd Exam</option>
+              <option value="Unit Test">Unit Test</option>
+              <option value="Final Exam">Final Exam</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="input-written-fm">Written Full Marks *</label>
+            <input type="number" id="input-written-fm" value="80" min="1" required oninput="validateSetupInputs()">
+          </div>
+          <div class="form-group">
+            <label for="input-project-fm">Project Full Marks *</label>
+            <input type="number" id="input-project-fm" value="20" min="0" required oninput="validateSetupInputs()">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: STUDENT LIST -->
+      <div class="setup-step">
+        <span class="step-badge">4</span>
+        <h2 class="step-title">👥 Student Roster Selection</h2>
+        <p class="step-subtitle">Must add at least 1 student to start the recording session.</p>
+
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchImportTab('tab-vision')">📷 Parse via Vision AI</button>
+          <button class="tab-btn" onclick="switchImportTab('tab-manual')">✏️ Manual Entry</button>
+          <button class="tab-btn" onclick="switchImportTab('tab-csv')">📥 Import CSV</button>
+        </div>
+
+        <!-- Vision AI Tab -->
+        <div id="tab-vision" class="tab-content">
+          <div class="upload-zone">
+            <p style="font-size: 1.5rem;">📷</p>
+            <p><strong>Click to upload</strong> or drag & drop a handwritten mark sheet image</p>
+            <input type="file" id="vision-file-input" accept="image/*" onchange="handleVisionUpload(event)">
+          </div>
+          <p id="vision-loading" class="hidden" style="margin-top: 10px; color: var(--accent); font-weight: 600; text-align: center;">
+            ⏳ Parsing image with Groq Vision... This may take a few seconds.
+          </p>
+
+          <!-- Vision Results Confirmation -->
+          <div id="vision-confirm-container" class="vision-confirm-panel hidden">
+            <h3 style="font-size: 1rem; margin-bottom: 8px; color: var(--accent);">✓ Parse Completed. Verify & Edit below:</h3>
+            <div class="student-preview-table-container">
+              <table class="preview-table" id="vision-preview-table">
+                <thead>
+                  <tr>
+                    <th>Roll No.</th>
+                    <th>Name</th>
+                    <th>Written</th>
+                    <th>Project</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="vision-preview-tbody"></tbody>
+              </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 12px;">
+              <button class="btn btn-green btn-sm" onclick="confirmVisionImport()">✓ Confirm Import</button>
+              <button class="btn btn-red btn-sm" onclick="cancelVisionImport()">✗ Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Entry Tab -->
+        <div id="tab-manual" class="tab-content hidden">
+          <div class="form-row" style="align-items: flex-end; margin-bottom: 16px;">
+            <div class="form-group" style="flex: 1;">
+              <label for="manual-roll">Roll No</label>
+              <input type="text" id="manual-roll" placeholder="e.g. 1">
+            </div>
+            <div class="form-group" style="flex: 3;">
+              <label for="manual-name">Student Name</label>
+              <input type="text" id="manual-name" placeholder="e.g. Riya Das">
+            </div>
+            <div class="form-group">
+              <button class="btn btn-accent" onclick="addManualStudent()">Add</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text2);">
+            <strong>OR paste bulk records:</strong> (format: <i>roll, name</i> per line)
+          </div>
+          <div class="form-group">
+            <textarea id="manual-bulk-textarea" rows="4" placeholder="1, Riya Das&#10;2, Joy Roy&#10;3, Amit Sen"></textarea>
+          </div>
+          <button class="btn btn-sm" onclick="importBulkTextarea()">Import Bulk List</button>
+        </div>
+
+        <!-- CSV Tab -->
+        <div id="tab-csv" class="tab-content hidden">
+          <div class="upload-zone">
+            <p style="font-size: 1.5rem;">📁</p>
+            <p><strong>Click to upload</strong> or drag CSV file (format: roll_no, name per line, no header)</p>
+            <input type="file" id="csv-file-input" accept=".csv" onchange="handleCSVUpload(event)">
+          </div>
+        </div>
+
+        <!-- Master Student Preview List Table -->
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 1rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Current Roster (<span id="roster-count">0</span> students)</span>
+            <button class="btn btn-red btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" onclick="clearRoster()">Clear All</button>
+          </h3>
+          <div class="student-preview-table-container" style="max-height: 200px;">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>Roll No.</th>
+                  <th>Student Name</th>
+                  <th style="width: 60px; text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="master-roster-tbody">
+                <tr>
+                  <td colspan="3" style="text-align: center; color: var(--text3);">No students added yet. Please use import/manual options above.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Large Start Button -->
+      <div class="start-container">
+        <button id="btn-start-session" class="btn btn-accent btn-large" disabled onclick="startVoiceSession()">
+          🎙️ Start Voice Session
+        </button>
+        <div id="start-tooltip" class="tooltip-text show"></div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------
+         SCREEN 2: CANVAS / SPREADSHEET VIEW
+         ---------------------------------------------------- -->
+    <div id="canvas-screen" class="canvas-screen hidden">
+      
+      <!-- STICKY TOP BAR -->
+      <div class="top-bar no-print">
+        <div class="app-brand">
+          <span>📋 Mark Record Canvas</span>
+        </div>
+        <div class="session-indicator" id="canvas-session-header">
+          Class 7-A | 1st Exam | Session: 2026-2027
+        </div>
+        
+        <div class="top-bar-controls">
+          <!-- Status Light Indicator -->
+          <div class="status-indicator">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">AI Online</span>
+          </div>
+
+          <!-- Voice Mic Trigger -->
+          <button class="mic-btn inactive" id="btn-toggle-mic" onclick="toggleMicrophone()" title="Toggle Mic (🎙️)">
+            🎙️
+          </button>
+          
+          <button class="btn btn-sm" onclick="exportToExcel()" title="Export Excel (.xlsx)">
+            📥 Export Excel
+          </button>
+
+          <button class="btn btn-sm" onclick="triggerPrint()" title="Print Summary Layout">
+            🖨️ Print
+          </button>
+          
+          <button class="btn btn-sm" onclick="undo()" title="Undo (Ctrl+Z)">
+            ⤺ Undo
+          </button>
+
+          <button class="btn btn-sm" onclick="openHelpModal()" title="Help Instructions">
+            ❓ Help
+          </button>
+          
+          <button class="btn btn-accent btn-sm" onclick="returnToSetup()" title="Return to Setup Configurations">
+            ⚙️ Settings
+          </button>
+        </div>
+      </div>
+
+      <!-- PRINT HEADER VIEW (Only shows in print layout) -->
+      <div class="print-header hidden" style="display: none; padding: 20px; border-bottom: 2px solid #000; text-align: center;">
+        <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 4px;">STUDENT MARKSHEET SUMMARY REPORT</h2>
+        <div style="font-size: 1rem; color: #333;" id="print-metadata-sub"></div>
+      </div>
+
+      <!-- SPREADSHEET CANVAS -->
+      <div class="spreadsheet-container">
+        <table class="marks-table" id="canvas-marks-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th style="width: 100px;">Roll No.</th>
+              <th>Student Name</th>
+              <th style="width: 150px;" id="th-written">Written (80pts)</th>
+              <th style="width: 150px;" id="th-project">Project (20pts)</th>
+              <th style="width: 100px;">Total</th>
+              <th style="width: 100px;" class="col-pct">Percentage</th>
+              <th style="width: 150px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="canvas-marks-tbody"></tbody>
+        </table>
+
+        <!-- Floating Jump Button -->
+        <button id="jump-to-edit-btn" class="jump-btn no-print" onclick="jumpToLastEditedRow()">
+          ↑ Jump to last edit
+        </button>
+      </div>
+
+      <!-- STICKY TABLE FOOTER -->
+      <div class="table-footer">
+        <div id="footer-recorded">Recorded: 0 / 0</div>
+        <div id="footer-avg">Class Avg: 0.0%</div>
+        <div id="footer-highest">Highest: —</div>
+        <div id="footer-lowest">Lowest: —</div>
+      </div>
+
+      <!-- CHAT PANEL -->
+      <div class="chat-panel no-print" id="chat-panel">
+        <div class="chat-header" onclick="toggleChatPanel()">
+          <div class="chat-title">
+            <span>💬 Live Audio/Chat Console</span>
+          </div>
+          <div class="chat-header-actions">
+            <button class="btn btn-sm btn-red" style="padding: 2px 8px; font-size: 0.75rem;" onclick="clearHistoryChat(event)">🗑️ Clear</button>
+            <button class="collapse-btn" id="btn-collapse-chat">▲</button>
+          </div>
+        </div>
+        
+        <div class="chat-history" id="chat-history"></div>
+
+        <!-- Live interim STT wrapper inside history -->
+        <div class="chat-input-bar">
+          <input type="text" id="chat-text-input" autocomplete="off" placeholder="Type instructions or say marks... (Enter to send)" onkeydown="handleChatSubmit(event)">
+          <button class="btn btn-accent" onclick="submitChatMessage()">Send</button>
+        </div>
+      </div>
+
+      <!-- Floating Summary Card (collapsible, bottom-right) -->
+      <div class="floating-summary-card no-print" id="floating-summary-card">
+        <div style="font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px; color: var(--accent);">📊 Real-time Stats</div>
+        <div class="summary-row"><span>Recorded:</span><span id="float-recorded" class="summary-val">0 / 0</span></div>
+        <div class="summary-row"><span>Class Avg:</span><span id="float-avg" class="summary-val">0%</span></div>
+        <div class="summary-row"><span>🏆 Highest:</span><span id="float-highest" class="summary-val" style="font-size: 0.75rem; text-align: right;">—</span></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ----------------------------------------------------
+       HELP INSTRUCTIONAL MODAL
+       ---------------------------------------------------- -->
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeHelpModal()">❌</button>
+      <div class="modal-title">❓ App Usage Instructions / ব্যবহার নির্দেশাবলী</div>
+      <div class="modal-body">
+        <div style="margin-bottom: 16px;">
+          <h4 style="color: var(--accent); margin-bottom: 4px;">English Guide</h4>
+          <ol>
+            <li>Configure your **Groq API Key** and Session details on the setup screen.</li>
+            <li>Import students using **Groq AI Vision** (photo upload), copy-paste lists, or a CSV file.</li>
+            <li>Click **Start Voice Session** to launch the marks entry spreadsheet view.</li>
+            <li>Enable the mic button. Say: **"Roll 1 Riya Das, written 72, project 18"** or similar.</li>
+            <li>The AI assistant will verify the name, roll, and limits, and will ask you: **"Saving Riya Das, Roll 1: Written 72/80, Project 18/20. Correct?"**</li>
+            <li>Confirm by saying: **"Yes"**, **"Okay"**, or **"Correct"** to save to the sheet!</li>
+            <li>You can also speak wake words locally: **"Stop" / "Pause"** to pause speech capture, and **"Resume"** to restart it.</li>
+            <li>Click cell fields anytime to type modifications manually.</li>
+          </ol>
+        </div>
+        <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+          <h4 style="color: var(--accent); margin-bottom: 4px;">বাংলা নির্দেশিকা</h4>
+          <ol>
+            <li>সেটআপ স্ক্রিনে আপনার **Groq API Key** এবং ক্লাসের বিবরণ যোগ করুন।</li>
+            <li>**Groq AI Vision** (ছবির মাধ্যমে), কপি-পেস্ট করে অথবা CSV ফাইল ব্যবহার করে শিক্ষার্থীদের তালিকা যোগ করুন।</li>
+            <li>ভয়েস সেশন শুরু করতে **Start Voice Session** বাটনে ক্লিক করুন।</li>
+            <li>মাইক্রোফোন অন করে বলুন: **"রোল ১ রিয়া দাস, লিখিত ৭২, প্রজেক্ট ১৮"**।</li>
+            <li>AI সহকারী নাম, রোল ও নম্বর চেক করে আপনাকে জিজ্ঞেস করবে: **"Saving Riya Das, Roll 1: Written 72/80, Project 18/20. Correct?"**</li>
+            <li>সেভ করতে বলুন: **"হ্যাঁ"**, **"ঠিক আছে"**, অথবা **"confirm"**!</li>
+            <li>ভয়েস কন্ট্রোল করতে বলুন: ভয়েস ইনপুট সাময়িক বন্ধ করতে **"বন্ধ করো"** এবং পুনরায় চালু করতে **"শুরু করো"** বলুন।</li>
+            <li>সরাসরি কী-বোর্ড দিয়ে এডিট করতে টেবিলের নির্দিষ্ট ঘরে ক্লিক করুন।</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-accent" onclick="closeHelpModal()">Got it! / বুঝেছি</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ----------------------------------------------------
+       CONFIRMATION DIALOG (FOR CLEARS / RESETS)
+       ---------------------------------------------------- -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-title" style="color: var(--red);">⚠ Warning / সতর্কবার্তা</div>
+      <div class="modal-body" id="confirm-modal-body">
+        Are you sure you want to proceed?
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-red" id="btn-confirm-yes">Yes, Proceed</button>
+        <button class="btn" onclick="closeConfirmModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ----------------------------------------------------
+       JAVASCRIPT APPLICATION CORE ENGINE
+       ---------------------------------------------------- -->
+  <script>
+    // ----------------------------------------------------
+    // CONSTANTS & VOCABULARIES
+    // ----------------------------------------------------
+    const STRINGS = {
+      listening: "Listening...",
+      speaking: "Speaking...",
+      online: "AI Online",
+      paused: "Paused",
+      saved: "Saved! / সংরক্ষিত!",
+      confirmSave: "Is that correct? / সঠিক কি?",
+      keySaved: "✓ Key saved",
+      keyEmpty: "API Key is empty",
+      localOnly: "Stored locally in browser only"
+    };
+
+    // ----------------------------------------------------
+    // STATE ENGINE
+    // ----------------------------------------------------
+    let state = {
+      apiKey: '',
+      config: {
+        session: '',
+        class: '',
+        section: '',
+        total_students: 0,
+        exam: '1st Exam',
+        written_fm: 80,
+        project_fm: 20
+      },
+      students: [],       // { roll_no, name, written_marks, project_marks, total, percentage, saved_at, verified, manually_edited, conflict }
+      history: [],        // Cap at 20 elements, stored in sessionStorage
+      undoStack: [],      // History state stack (max 5 records)
+      isListening: false,
+      isSpeaking: false,
+      activeRowIndex: null,
+      lastEditedRoll: null,
+      view: 'setup',
+      chatExpanded: true,
+      online: navigator.onLine
+    };
+
+    // Speech engines
+    let recognition = null;
+    let currentSpeechSynthesisUtterance = null;
+    let pendingAiActionObj = null; // Stored target before dynamic user verification
+
+    // ----------------------------------------------------
+    // INITIALIZATION & LIFECYCLE
+    // ----------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStateFromLocalStorage();
+      checkSpeechRecognitionSupport();
+      registerServiceListeners();
+      scanSavedSessions();
+    });
+
+    function registerServiceListeners() {
+      window.addEventListener('online', () => {
+        state.online = true;
+        showBanner("✓ Connected: Back online / কানেক্টেড: ইন্টারনেট সচল আছে", "green");
+        updateStatusIndicator();
+      });
+      window.addEventListener('offline', () => {
+        state.online = false;
+        showBanner("⚠ Connection Lost: Running in offline manual-only mode / ইন্টারনেট সংযোগ বিচ্ছিন্ন: ম্যানুয়াল মোড সক্রিয়", "amber");
+        updateStatusIndicator();
+      });
+      
+      // Global key listener for Ctrl+Z
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+          if (state.view === 'canvas') {
+            e.preventDefault();
+            undo();
+          }
+        }
+      });
+    }
+
+    // ----------------------------------------------------
+    // STORAGE & PERSISTENCE
+    // ----------------------------------------------------
+    function getApiKey() {
+      return state.apiKey || localStorage.getItem('srm_api_key') || '';
+    }
+
+    function loadStateFromLocalStorage() {
+      const savedKey = localStorage.getItem('srm_api_key');
+      if (savedKey) {
+        state.apiKey = savedKey;
+        document.getElementById('input-api-key').value = savedKey;
+        setApiKeyStatus(true);
+      } else {
+        setApiKeyStatus(false);
+      }
+    }
+
+    function setApiKeyStatus(exists) {
+      const statusEl = document.getElementById('api-key-status');
+      if (exists) {
+        statusEl.textContent = STRINGS.keySaved;
+        statusEl.className = "api-key-status saved";
+      } else {
+        statusEl.textContent = "";
+        statusEl.className = "api-key-status";
+      }
+    }
+
+    function onApiKeyInput() {
+      const keyVal = document.getElementById('input-api-key').value.trim();
+      state.apiKey = keyVal;
+      if (keyVal) {
+        localStorage.setItem('srm_api_key', keyVal);
+        setApiKeyStatus(true);
+      } else {
+        localStorage.removeItem('srm_api_key');
+        setApiKeyStatus(false);
+      }
+      validateSetupInputs();
+    }
+
+    function togglePasswordVisibility(id) {
+      const el = document.getElementById(id);
+      el.type = (el.type === 'password') ? 'text' : 'password';
+    }
+
+    // Storage Key Generator based on active state configs
+    function getStorageKey(config) {
+      const session = (config.session || '').trim().replace(/\s+/g, '-');
+      const cls = (config.class || '').trim().replace(/\s+/g, '-');
+      const sec = (config.section || '').trim().replace(/\s+/g, '-');
+      const ex = (config.exam || '').trim().replace(/\s+/g, '-');
+      return `srm_${session}_${cls}_${sec}_${ex}`;
+    }
+
+    function saveSessionData() {
+      if (!state.config.session || !state.config.class || !state.config.section) return;
+      const key = getStorageKey(state.config);
+      const dataToSave = {
+        config: {
+          ...state.config,
+          created_at: new Date().toISOString()
+        },
+        students: state.students
+      };
+      try {
+        localStorage.setItem(key, JSON.stringify(dataToSave));
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          showToast("Storage quota exceeded! Export records to Excel & clear history in Settings.", "red");
+        } else {
+          showToast("Failed to write to local storage.", "red");
+        }
+      }
+    }
+
+    // Scans all srm_* localStorage keys to build a quick resume bar if sessions exist
+    function scanSavedSessions() {
+      const keys = Object.keys(localStorage);
+      const srmKeys = keys.filter(k => k.startsWith('srm_') && k !== 'srm_api_key');
+      if (srmKeys.length === 0) {
+        document.getElementById('resume-container').classList.add('hidden');
+        return;
+      }
+      
+      // Select the latest updated one to offer resume
+      srmKeys.sort((a, b) => {
+        try {
+          const tA = JSON.parse(localStorage.getItem(a)).config.created_at || '';
+          const tB = JSON.parse(localStorage.getItem(b)).config.created_at || '';
+          return tB.localeCompare(tA);
+        } catch(e) { return 0; }
+      });
+
+      const targetKey = srmKeys[0];
+      try {
+        const parsed = JSON.parse(localStorage.getItem(targetKey));
+        const conf = parsed.config;
+        const totalSaved = parsed.students.filter(s => s.written_marks != null).length;
+        
+        document.getElementById('resume-title').innerHTML = `<strong>Resume:</strong> Class ${conf.class}-${conf.section} | ${conf.exam} | ${conf.session}`;
+        document.getElementById('resume-meta').textContent = `${totalSaved} of ${conf.total_students} student marks recorded.`;
+        document.getElementById('resume-container').dataset.key = targetKey;
+        document.getElementById('resume-container').classList.remove('hidden');
+      } catch (e) {
+        document.getElementById('resume-container').classList.add('hidden');
+      }
+    }
+
+    function resumeSavedSession() {
+      const key = document.getElementById('resume-container').dataset.key;
+      if (!key) return;
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key));
+        state.config = parsed.config;
+        state.students = parsed.students;
+        
+        // Populate inputs so user returns to setup matching
+        document.getElementById('input-session').value = state.config.session;
+        document.getElementById('input-class').value = state.config.class;
+        document.getElementById('input-section').value = state.config.section;
+        document.getElementById('input-total-students').value = state.config.total_students;
+        document.getElementById('input-exam').value = state.config.exam;
+        document.getElementById('input-written-fm').value = state.config.written_fm;
+        document.getElementById('input-project-fm').value = state.config.project_fm;
+        
+        showToast("Session successfully loaded! সেশন সফলভাবে লোড হয়েছে।", "green");
+        
+        // Go directly to spreadsheet view
+        state.view = 'canvas';
+        initUndoStack();
+        transitionScreen();
+      } catch (e) {
+        showToast("Error reading saved session.", "red");
+      }
+    }
+
+    function clearSelectedSavedSession() {
+      const key = document.getElementById('resume-container').dataset.key;
+      if (!key) return;
+      openConfirmModal("Delete Saved Session / সেশন ডিলিট করুন", "Are you sure you want to permanently delete this saved session?", () => {
+        localStorage.removeItem(key);
+        closeConfirmModal();
+        scanSavedSessions();
+        showToast("Session deleted. সেশন মুছে ফেলা হয়েছে।", "amber");
+      });
+    }
+
+    // ----------------------------------------------------
+    // SETUP CONTROLLER (VALIDATIONS & IMPORTS)
+    // ----------------------------------------------------
+    function validateSetupInputs() {
+      const session = document.getElementById('input-session').value.trim();
+      const cls = document.getElementById('input-class').value.trim();
+      const sec = document.getElementById('input-section').value.trim();
+      const totStr = parseInt(document.getElementById('input-total-students').value);
+      const writtenFM = parseInt(document.getElementById('input-written-fm').value);
+      const projectFM = parseInt(document.getElementById('input-project-fm').value);
+      const apiKey = getApiKey();
+
+      state.config.session = session;
+      state.config.class = cls;
+      state.config.section = sec;
+      state.config.total_students = totStr;
+      state.config.written_fm = writtenFM;
+      state.config.project_fm = projectFM;
+      state.config.exam = document.getElementById('input-exam').value;
+
+      const isRosterValid = state.students.length >= 1;
+      const allFilled = session && cls && sec && !isNaN(totStr) && totStr > 0 && !isNaN(writtenFM) && writtenFM > 0 && !isNaN(projectFM) && projectFM >= 0 && apiKey;
+
+      const startBtn = document.getElementById('btn-start-session');
+      const tooltip = document.getElementById('start-tooltip');
+
+      if (allFilled && isRosterValid) {
+        startBtn.removeAttribute('disabled');
+        tooltip.classList.remove('show');
+        tooltip.innerHTML = '';
+      } else {
+        startBtn.setAttribute('disabled', 'true');
+        tooltip.classList.add('show');
+        
+        let missing = [];
+        if (!apiKey) missing.push("Valid Groq API Key (ধাপ ১)");
+        if (!session) missing.push("Session (ধাপ ২)");
+        if (!cls) missing.push("Class (ধাপ ২)");
+        if (!sec) missing.push("Section (ধাপ ২)");
+        if (isNaN(totStr) || totStr <= 0) missing.push("Total Students (ধাপ ২)");
+        if (isNaN(writtenFM) || writtenFM <= 0) missing.push("Written Full Marks (ধাপ ৩)");
+        if (isNaN(projectFM) || projectFM < 0) missing.push("Project Full Marks (ধাপ ৩)");
+        if (!isRosterValid) missing.push("At least 1 student in Roster (ধাপ ৪)");
+
+        tooltip.innerHTML = `<strong>Session cannot start. Missing items:</strong><br>${missing.join('<br>')}`;
+      }
+    }
+
+    function switchImportTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      
+      // Determine click source
+      const eventTarget = window.event.target;
+      eventTarget.classList.add('active');
+      document.getElementById(tabId).classList.remove('hidden');
+    }
+
+    // OPTION A: Groq Vision AI Image Parsing
+    async function handleVisionUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        showToast("Please save your Groq API key first in Step 1.", "red");
+        e.target.value = '';
+        return;
+      }
+
+      document.getElementById('vision-loading').classList.remove('hidden');
+      document.getElementById('vision-confirm-container').classList.add('hidden');
+
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const base64Url = evt.target.result;
+        try {
+          const parsed = await callGroqVision(base64Url);
+          displayVisionPreview(parsed);
+        } catch (err) {
+          showToast("AI Vision Error: " + err.message, "red");
+          document.getElementById('vision-loading').classList.add('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function callGroqVision(dataUrl) {
+      const apiKey = getApiKey();
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${apiKey}`, 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({
+          model: "llama-3.2-11b-vision-preview",
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: dataUrl } },
+              { 
+                type: "text", 
+                text: "This is a handwritten student mark sheet. Extract all student data. Return ONLY a valid JSON object with two keys: 'metadata' (object: session, class, section, written_fm, project_fm — null if not visible) and 'students' (array: roll_no, name, written_marks, project_marks — null for empty/unclear values). No markdown, no backticks, no explanation. ONLY the JSON object." 
+              }
+            ]
+          }],
+          max_tokens: 2000
+        })
+      });
+
+      if (res.status === 401) throw new Error("Invalid API key / 401 Unauthorized.");
+      if (!res.ok) throw new Error(`Groq API returned HTTP ${res.status}`);
+      
+      const data = await res.json();
+      const raw = data.choices[0].message.content;
+      try {
+        const cleaned = raw.replace(/```json|```/g, '').trim();
+        return JSON.parse(cleaned);
+      } catch (err) {
+        // Fallback display raw response in a modal
+        showErrorRawModal(raw);
+        throw new Error("Could not parse JSON. Displaying raw data.");
+      }
+    }
+
+    let parsedVisionResult = null; // Temp holder
+
+    function displayVisionPreview(parsed) {
+      document.getElementById('vision-loading').classList.add('hidden');
+      document.getElementById('vision-confirm-container').classList.remove('hidden');
+      
+      parsedVisionResult = parsed;
+
+      // Handle metadata auto-fill
+      if (parsed.metadata) {
+        const m = parsed.metadata;
+        if (m.session) document.getElementById('input-session').value = m.session;
+        if (m.class) document.getElementById('input-class').value = m.class;
+        if (m.section) document.getElementById('input-section').value = m.section;
+        if (m.written_fm) document.getElementById('input-written-fm').value = m.written_fm;
+        if (m.project_fm) document.getElementById('input-project-fm').value = m.project_fm;
+        validateSetupInputs();
+      }
+
+      const tbody = document.getElementById('vision-preview-tbody');
+      tbody.innerHTML = '';
+
+      if (!parsed.students || parsed.students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No students found in image.</td></tr>`;
+        return;
+      }
+
+      parsed.students.forEach((s, idx) => {
+        const rollEmpty = !s.roll_no;
+        const nameEmpty = !s.name;
+        const hasError = rollEmpty || nameEmpty;
+
+        const tr = document.createElement('tr');
+        if (hasError) tr.className = 'cell-error';
+
+        tr.innerHTML = `
+          <td><input type="text" value="${s.roll_no || ''}" placeholder="Required" class="prev-input" data-field="roll_no" data-idx="${idx}"></td>
+          <td><input type="text" value="${s.name || ''}" placeholder="Required" class="prev-input" data-field="name" data-idx="${idx}"></td>
+          <td><input type="number" value="${s.written_marks ?? ''}" placeholder="Pending" class="prev-input" data-field="written_marks" data-idx="${idx}"></td>
+          <td><input type="number" value="${s.project_marks ?? ''}" placeholder="Pending" class="prev-input" data-field="project_marks" data-idx="${idx}"></td>
+          <td><button class="btn btn-red btn-sm" onclick="removeVisionPreviewRow(${idx})">✗</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function removeVisionPreviewRow(idx) {
+      if (!parsedVisionResult || !parsedVisionResult.students) return;
+      parsedVisionResult.students.splice(idx, 1);
+      displayVisionPreview(parsedVisionResult);
+    }
+
+    function confirmVisionImport() {
+      if (!parsedVisionResult || !parsedVisionResult.students) return;
+
+      // Extract values from dynamic DOM inputs to preserve user manual adjustments
+      const tbody = document.getElementById('vision-preview-tbody');
+      const rows = tbody.querySelectorAll('tr');
+      const validatedList = [];
+
+      let errorDetected = false;
+
+      rows.forEach((row, idx) => {
+        const inputs = row.querySelectorAll('.prev-input');
+        let roll = '';
+        let name = '';
+        let written = null;
+        let project = null;
+
+        inputs.forEach(inp => {
+          const field = inp.dataset.field;
+          const val = inp.value.trim();
+          if (field === 'roll_no') roll = val;
+          if (field === 'name') name = val;
+          if (field === 'written_marks') written = val !== '' ? parseInt(val) : null;
+          if (field === 'project_marks') project = val !== '' ? parseInt(val) : null;
+        });
+
+        if (!roll || !name) {
+          row.classList.add('cell-error');
+          errorDetected = true;
+        } else {
+          validatedList.push({
+            roll_no: convertBengaliNumerals(roll),
+            name: name,
+            written_marks: written,
+            project_marks: project
+          });
+        }
+      });
+
+      if (errorDetected) {
+        showToast("Please fill roll numbers and names highlighted in red.", "red");
+        return;
+      }
+
+      // Merge into master state
+      validatedList.forEach(s => {
+        addStudentToMasterList(s.roll_no, s.name, s.written_marks, s.project_marks);
+      });
+
+      cancelVisionImport();
+      showToast("Students imported successfully! শিক্ষার্থীরা তালিকাভুক্ত হয়েছে।", "green");
+    }
+
+    function cancelVisionImport() {
+      parsedVisionResult = null;
+      document.getElementById('vision-confirm-container').classList.add('hidden');
+      document.getElementById('vision-file-input').value = '';
+    }
+
+    // OPTION B: Manual entry form and bulk list
+    function addManualStudent() {
+      const rollEl = document.getElementById('manual-roll');
+      const nameEl = document.getElementById('manual-name');
+      const roll = convertBengaliNumerals(rollEl.value.trim());
+      const name = nameEl.value.trim();
+
+      if (!roll || !name) {
+        showToast("Both roll and name are required / রোল এবং নাম উভয়ই আবশ্যক।", "amber");
+        return;
+      }
+
+      addStudentToMasterList(roll, name);
+      rollEl.value = '';
+      nameEl.value = '';
+      showToast(`Added: Roll ${roll} ${name}`, "green");
+    }
+
+    function importBulkTextarea() {
+      const text = document.getElementById('manual-bulk-textarea').value.trim();
+      if (!text) return;
+
+      const lines = text.split('\n');
+      let count = 0;
+      lines.forEach(line => {
+        const parts = line.split(',');
+        if (parts.length >= 2) {
+          const roll = convertBengaliNumerals(parts[0].trim());
+          const name = parts.slice(1).join(',').trim();
+          if (roll && name) {
+            addStudentToMasterList(roll, name);
+            count++;
+          }
+        }
+      });
+
+      document.getElementById('manual-bulk-textarea').value = '';
+      showToast(`Imported ${count} students. ${count} জন শিক্ষার্থী তালিকাভুক্ত করা হয়েছে।`, "green");
+    }
+
+    // OPTION C: CSV File Upload
+    function handleCSVUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/);
+        let count = 0;
+        lines.forEach(line => {
+          const parts = line.split(',');
+          if (parts.length >= 2) {
+            const roll = convertBengaliNumerals(parts[0].trim());
+            const name = parts.slice(1).join(',').trim();
+            if (roll && name) {
+              addStudentToMasterList(roll, name);
+              count++;
+            }
+          }
+        });
+        e.target.value = '';
+        showToast(`CSV Imported: ${count} students. CSV লোড সম্পন্ন।`, "green");
+      };
+      reader.readAsText(file);
+    }
+
+    // Master List operations
+    function addStudentToMasterList(roll, name, written = null, project = null) {
+      // Avoid duplicate roll numbers
+      const existsIdx = state.students.findIndex(s => s.roll_no === roll);
+      
+      const newStudentObj = {
+        roll_no: roll,
+        name: name,
+        written_marks: written,
+        project_marks: project,
+        total: (written != null || project != null) ? ((written || 0) + (project || 0)) : null,
+        percentage: null,
+        saved_at: (written != null || project != null) ? new Date().toISOString() : null,
+        verified: true,
+        manually_edited: false,
+        conflict: false
+      };
+
+      // Calculate percentage if marks are added
+      calculateTotalsAndPercentages(newStudentObj);
+
+      if (existsIdx !== -1) {
+        state.students[existsIdx] = newStudentObj;
+      } else {
+        state.students.push(newStudentObj);
+      }
+
+      // Sort by numerical roll number if possible
+      state.students.sort((a, b) => {
+        const numA = parseInt(a.roll_no);
+        const numB = parseInt(b.roll_no);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.roll_no.localeCompare(b.roll_no);
+      });
+
+      renderMasterRosterTable();
+      validateSetupInputs();
+    }
+
+    function removeStudentFromMaster(roll) {
+      state.students = state.students.filter(s => s.roll_no !== roll);
+      renderMasterRosterTable();
+      validateSetupInputs();
+    }
+
+    function clearRoster() {
+      state.students = [];
+      renderMasterRosterTable();
+      validateSetupInputs();
+    }
+
+    function renderMasterRosterTable() {
+      const tbody = document.getElementById('master-roster-tbody');
+      tbody.innerHTML = '';
+      
+      document.getElementById('roster-count').textContent = state.students.length;
+
+      if (state.students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text3);">No students added yet.</td></tr>`;
+        return;
+      }
+
+      state.students.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-family: 'Courier New', monospace; font-weight: 700; width: 80px;">${s.roll_no}</td>
+          <td>${s.name}</td>
+          <td style="text-align: center; width: 60px;"><button class="btn btn-red btn-sm" style="padding: 2px 6px;" onclick="removeStudentFromMaster('${s.roll_no}')">✗</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ----------------------------------------------------
+    // STATE HELPER LOGICS (AVERAGES / TOTALS)
+    // ----------------------------------------------------
+    function calculateTotalsAndPercentages(student) {
+      if (student.written_marks == null && student.project_marks == null) {
+        student.total = null;
+        student.percentage = null;
+        return;
+      }
+      
+      const w = student.written_marks || 0;
+      const p = student.project_marks || 0;
+      const maxW = state.config.written_fm || 80;
+      const maxP = state.config.project_fm || 20;
+
+      student.total = w + p;
+      student.percentage = ((w + p) / (maxW + maxP)) * 100;
+    }
+
+    function computeStats() {
+      const recorded = state.students.filter(s => s.written_marks != null || s.project_marks != null);
+      const totalCount = state.students.length;
+      
+      if (recorded.length === 0) {
+        return {
+          recordedCount: 0,
+          totalCount,
+          avgPercent: 0,
+          highest: { name: '—', score: 0 },
+          lowest: { name: '—', score: 0 }
+        };
+      }
+
+      let sumPercent = 0;
+      let highest = { name: '', score: -1 };
+      let lowest = { name: '', score: 9999 };
+
+      recorded.forEach(s => {
+        const score = s.total || 0;
+        const pct = s.percentage || 0;
+        sumPercent += pct;
+
+        if (score > highest.score) {
+          highest = { name: s.name, score: score };
+        }
+        if (score < lowest.score) {
+          lowest = { name: s.name, score: score };
+        }
+      });
+
+      return {
+        recordedCount: recorded.length,
+        totalCount,
+        avgPercent: sumPercent / recorded.length,
+        highest,
+        lowest
+      };
+    }
+
+    // ----------------------------------------------------
+    // SPREADSHEET CANVAS CONTROLLER & RENDERER
+    // ----------------------------------------------------
+    function transitionScreen() {
+      if (state.view === 'setup') {
+        document.getElementById('setup-screen').classList.remove('hidden');
+        document.getElementById('canvas-screen').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      } else {
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('canvas-screen').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Setup table configs
+        document.getElementById('th-written').textContent = `Written (${state.config.written_fm}pts)`;
+        document.getElementById('th-project').textContent = `Project (${state.config.project_fm}pts)`;
+        document.getElementById('canvas-session-header').textContent = `Class ${state.config.class}-${state.config.section} | ${state.config.exam} | Session: ${state.config.session}`;
+        
+        renderSpreadsheet();
+        updateFooterAndStats();
+        
+        // Speak initial greeting instructions
+        speakTTS(`Welcome to Voice Canvas. Active Exam session loaded for Class ${state.config.class}. Ready for input.`);
+      }
+    }
+
+    function renderSpreadsheet() {
+      const tbody = document.getElementById('canvas-marks-tbody');
+      tbody.innerHTML = '';
+
+      state.students.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.id = `tr-student-${s.roll_no}`;
+        
+        // Set targeted styling classes
+        if (state.activeRowIndex === idx) {
+          tr.className = 'tr-targeted';
+        } else if (s.conflict) {
+          tr.className = 'tr-conflict';
+        } else if (s.written_marks == null && s.project_marks == null) {
+          tr.className = 'tr-empty';
+        }
+
+        // Build values
+        const totalVal = s.total !== null ? s.total : '—';
+        const pctVal = s.percentage !== null ? `${s.percentage.toFixed(1)}%` : '—';
+        
+        let statusBadge = `<span class="status-badge pending">Pending</span>`;
+        if (s.conflict) {
+          statusBadge = `<span class="status-badge conflict">Conflict</span>`;
+        } else if (s.written_marks != null || s.project_marks != null) {
+          statusBadge = `<span class="status-badge recorded">Recorded</span>`;
+        }
+
+        const editBadge = s.manually_edited ? `<span class="badge-edited">✎ edited</span>` : '';
+
+        tr.innerHTML = `
+          <td style="color: var(--text3); font-size: 0.8rem;">${idx + 1}</td>
+          <td class="cell-roll">${s.roll_no}</td>
+          <td class="cell-name">${s.name}</td>
+          <td class="cell-editable" onclick="makeCellEditable(this, '${s.roll_no}', 'written_marks')">${s.written_marks !== null ? s.written_marks : '—'}</td>
+          <td class="cell-editable" onclick="makeCellEditable(this, '${s.roll_no}', 'project_marks')">${s.project_marks !== null ? s.project_marks : '—'}</td>
+          <td style="font-weight: 600;">${totalVal}</td>
+          <td class="col-pct">${pctVal}</td>
+          <td>${statusBadge}${editBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function makeCellEditable(cell, rollNo, field) {
+      if (cell.querySelector('input')) return; // Already editing
+      
+      const originalValue = cell.textContent.trim() === '—' ? '' : cell.textContent.trim();
+      cell.innerHTML = `<input type="number" value="${originalValue}" min="0">`;
+      
+      const input = cell.querySelector('input');
+      input.focus();
+      input.select();
+
+      const handleSave = () => {
+        const valStr = input.value.trim();
+        const student = state.students.find(s => s.roll_no === rollNo);
+        
+        if (valStr === '') {
+          saveToUndoStack();
+          student[field] = null;
+          student.manually_edited = true;
+          calculateTotalsAndPercentages(student);
+          saveSessionData();
+          renderSpreadsheet();
+          updateFooterAndStats();
+        } else {
+          const val = parseInt(valStr);
+          const maxVal = field === 'written_marks' ? state.config.written_fm : state.config.project_fm;
+          
+          if (val < 0 || val > maxVal) {
+            showToast(`Error: Marks cannot exceed full marks (${maxVal})!`, "red");
+            cell.textContent = originalValue || '—';
+          } else {
+            saveToUndoStack();
+            student[field] = val;
+            student.manually_edited = true;
+            calculateTotalsAndPercentages(student);
+            saveSessionData();
+            renderSpreadsheet();
+            updateFooterAndStats();
+            
+            // Trigger amber visual flash for manual edits
+            const row = document.getElementById(`tr-student-${rollNo}`);
+            if (row) {
+              row.classList.add('flash-amber');
+              setTimeout(() => row.classList.remove('flash-amber'), 1500);
+            }
+          }
+        }
+      };
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleSave();
+        if (e.key === 'Escape') {
+          cell.textContent = originalValue || '—';
+        }
+      });
+
+      input.addEventListener('blur', handleSave);
+    }
+
+    function updateFooterAndStats() {
+      const stats = computeStats();
+      
+      // Footer
+      document.getElementById('footer-recorded').textContent = `Recorded: ${stats.recordedCount} / ${stats.totalCount}`;
+      document.getElementById('footer-avg').textContent = `Class Avg: ${stats.avgPercent.toFixed(1)}%`;
+      document.getElementById('footer-highest').textContent = `Highest: ${stats.highest.name} (${stats.highest.score}pts)`;
+      document.getElementById('footer-lowest').textContent = `Lowest: ${stats.lowest.name} (${stats.lowest.score}pts)`;
+      
+      // Floating summary
+      document.getElementById('float-recorded').textContent = `${stats.recordedCount} / ${stats.totalCount}`;
+      document.getElementById('float-avg').textContent = `${stats.avgPercent.toFixed(1)}%`;
+      document.getElementById('float-highest').textContent = `${stats.highest.name} (${stats.highest.score})`;
+    }
+
+    function startVoiceSession() {
+      saveSessionData();
+      state.view = 'canvas';
+      initUndoStack();
+      transitionScreen();
+    }
+
+    function returnToSetup() {
+      openConfirmModal("Settings Configuration / সেটআপ এডিটর", "Return to setup screen? Voice capturing will pause.", () => {
+        closeConfirmModal();
+        state.view = 'setup';
+        if (recognition) recognition.stop();
+        setStatus('paused');
+        state.isListening = false;
+        transitionScreen();
+        scanSavedSessions();
+      });
+    }
+
+    // Auto-scroll target student row into viewport
+    function targetStudentRow(rollNo) {
+      const row = document.getElementById(`tr-student-${rollNo}`);
+      if (!row) return;
+
+      // Remove targeted class from all rows
+      document.querySelectorAll('.marks-table tr').forEach(r => r.classList.remove('tr-targeted'));
+      
+      row.className = 'tr-targeted';
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      state.lastEditedRoll = rollNo;
+      
+      // Setup Scroll Monitor to show floating Jump Button
+      const container = document.querySelector('.spreadsheet-container');
+      const checkScrollVisibility = () => {
+        const rect = row.getBoundingClientRect();
+        const parentRect = container.getBoundingClientRect();
+        const isVisible = (rect.top >= parentRect.top && rect.bottom <= parentRect.bottom);
+        
+        const jumpBtn = document.getElementById('jump-to-edit-btn');
+        if (!isVisible) {
+          jumpBtn.style.display = 'flex';
+        } else {
+          jumpBtn.style.display = 'none';
+        }
+      };
+
+      container.removeEventListener('scroll', checkScrollVisibility);
+      container.addEventListener('scroll', checkScrollVisibility);
+    }
+
+    function jumpToLastEditedRow() {
+      if (state.lastEditedRoll) {
+        targetStudentRow(state.lastEditedRoll);
+      }
+    }
+
+    // ----------------------------------------------------
+    // SPEECH SYNTHESIS ENGINE (TTS)
+    // ----------------------------------------------------
+    function speakTTS(text) {
+      if (!window.speechSynthesis) return;
+
+      // Stop current speaking
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = detectLang(text);
+      utter.rate = 0.95;
+      utter.pitch = 1.0;
+
+      // Voice preference logic
+      const voices = window.speechSynthesis.getVoices();
+      let selectedVoice = null;
+
+      if (utter.lang === 'bn-BD') {
+        selectedVoice = voices.find(v => v.lang.startsWith('bn') && v.name.toLowerCase().includes('female'))
+                     || voices.find(v => v.lang.startsWith('bn'))
+                     || voices.find(v => v.lang.startsWith('en-IN'))
+                     || null;
+      } else {
+        selectedVoice = voices.find(v => v.lang.startsWith('en-IN') && v.name.toLowerCase().includes('female'))
+                     || voices.find(v => v.lang.startsWith('en-IN'))
+                     || voices.find(v => v.lang.startsWith('en'))
+                     || null;
+      }
+
+      if (selectedVoice) utter.voice = selectedVoice;
+
+      utter.onstart = () => {
+        state.isSpeaking = true;
+        setStatus('speaking');
+        // Stop capturing audio so synthesizer doesn't feedback on itself
+        if (recognition && state.isListening) {
+          recognition.stop();
+        }
+      };
+
+      utter.onend = () => {
+        state.isSpeaking = false;
+        if (state.isListening) {
+          setStatus('listening');
+          if (recognition) {
+            try { recognition.start(); } catch(e) {}
+          }
+        } else {
+          setStatus('paused');
+        }
+      };
+
+      utter.onerror = () => {
+        state.isSpeaking = false;
+        if (state.isListening && recognition) {
+          try { recognition.start(); } catch(e) {}
+        }
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    function detectLang(text) {
+      const bnPattern = /[\u0980-\u09FF]/;
+      return bnPattern.test(text) ? 'bn-BD' : 'en-IN';
+    }
+
+    // ----------------------------------------------------
+    // SPEECH RECOGNITION ENGINE (STT)
+    // ----------------------------------------------------
+    function checkSpeechRecognitionSupport() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        document.getElementById('btn-toggle-mic').classList.add('hidden');
+        showBanner("Voice input not supported in this browser. Running in Chat-Only Mode. / ভয়েস ইনপুট সমর্থিত নয়। চ্যাট মোড সক্রিয় করুন।", "amber");
+      }
+    }
+
+    function toggleMicrophone() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) return;
+
+      if (state.isListening) {
+        // Stop
+        state.isListening = false;
+        setStatus('paused');
+        if (recognition) recognition.stop();
+        showToast("Mic paused. ভয়েস ইনপুট বন্ধ করা হয়েছে।", "amber");
+      } else {
+        // Start
+        state.isListening = true;
+        setStatus('listening');
+        initSpeechRecognition();
+        showToast("Mic listening! ভয়েস ইনপুট চালু করা হয়েছে।", "green");
+      }
+    }
+
+    function initSpeechRecognition() {
+      if (recognition) {
+        try { recognition.start(); } catch(e) {}
+        return;
+      }
+
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'bn-BD';
+
+      recognition.onresult = (e) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          if (e.results[i].isFinal) {
+            finalTranscript += e.results[i][0].transcript;
+          } else {
+            interimTranscript += e.results[i][0].transcript;
+          }
+        }
+
+        if (interimTranscript) {
+          showInterimSTT(interimTranscript);
+        }
+
+        if (finalTranscript) {
+          processSpeechInput(finalTranscript);
+        }
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === 'no-speech') return;
+        console.error("SpeechRecognition error", e.error);
+        
+        // Smart retry with alternative language 'en-IN' on failure or restart
+        if (recognition.lang === 'bn-BD') {
+          recognition.lang = 'en-IN';
+        } else {
+          recognition.lang = 'bn-BD';
+        }
+      };
+
+      recognition.onend = () => {
+        if (state.isListening && !state.isSpeaking) {
+          try { recognition.start(); } catch(e) {}
+        }
+      };
+
+      try { recognition.start(); } catch(e) {}
+    }
+
+    function showInterimSTT(text) {
+      let interimEl = document.getElementById('chat-interim-log');
+      if (!interimEl) {
+        interimEl = document.createElement('div');
+        interimEl.id = 'chat-interim-log';
+        interimEl.className = 'chat-interim';
+        document.getElementById('chat-history').appendChild(interimEl);
+      }
+      interimEl.textContent = text;
+      
+      const historyEl = document.getElementById('chat-history');
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+    function clearInterimSTT() {
+      const interimEl = document.getElementById('chat-interim-log');
+      if (interimEl) interimEl.remove();
+    }
+
+    // ----------------------------------------------------
+    // PROCESS SPEECH & WAKE WORDS
+    // ----------------------------------------------------
+    function processSpeechInput(text) {
+      clearInterimSTT();
+      if (!text.trim()) return;
+
+      appendChatBubble(text, 'user');
+
+      // 1. Wake word local detections
+      const normalized = text.toLowerCase().trim();
+      if (normalized.includes('বন্ধ করো') || normalized.includes('stop') || normalized.includes('pause')) {
+        state.isListening = false;
+        setStatus('paused');
+        if (recognition) recognition.stop();
+        speakTTS("Session paused. সেশন বন্ধ করা হয়েছে।");
+        return;
+      }
+      if (normalized.includes('শুরু করো') || normalized.includes('start') || normalized.includes('resume')) {
+        state.isListening = true;
+        setStatus('listening');
+        if (recognition) {
+          try { recognition.start(); } catch(e) {}
+        }
+        speakTTS("Session resumed. সেশন শুরু করা হয়েছে।");
+        return;
+      }
+
+      // Convert Bengali digits inside user speech before sending to AI
+      const arabicNumeralsSpeech = convertBengaliNumerals(text);
+
+      // 2. Direct Confirmation interceptor (Wait for save validation command)
+      if (pendingAiActionObj) {
+        const isYes = /yes|yeah|okay|correct|ঠিক আছে|হ্যাঁ|নিশ্চিত|confirm/i.test(normalized);
+        const isNo = /no|cancel|না|ভুল/i.test(normalized);
+        
+        if (isYes) {
+          executePendingSaveAction();
+          return;
+        } else if (isNo) {
+          speakTTS("Action cancelled. বাতিল করা হয়েছে।");
+          pendingAiActionObj = null;
+          // Clean up confirmation bars
+          document.querySelectorAll('.ai-confirm-bar').forEach(el => el.remove());
+          return;
+        }
+      }
+
+      // Send to Groq Chat LLM
+      sendToAI(arabicNumeralsSpeech);
+    }
+
+    function convertBengaliNumerals(str) {
+      const mapping = {
+        '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+        '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+      };
+      return str.replace(/[০-৯]/g, char => mapping[char]);
+    }
+
+    function setStatus(mode) {
+      const dot = document.getElementById('status-dot');
+      const textLabel = document.getElementById('status-text');
+      const micBtn = document.getElementById('btn-toggle-mic');
+
+      dot.className = "status-dot";
+      
+      if (mode === 'listening') {
+        dot.classList.add('listening');
+        textLabel.textContent = STRINGS.listening;
+        if (micBtn) {
+          micBtn.className = "mic-btn active";
+        }
+      } else if (mode === 'speaking') {
+        dot.classList.add('speaking');
+        textLabel.textContent = STRINGS.speaking;
+      } else if (mode === 'paused') {
+        dot.classList.add('paused');
+        textLabel.textContent = STRINGS.paused;
+        if (micBtn) {
+          micBtn.className = "mic-btn inactive";
+        }
+      } else {
+        dot.classList.add('online');
+        textLabel.textContent = STRINGS.online;
+      }
+    }
+
+    function updateStatusIndicator() {
+      if (!state.online) {
+        setStatus('paused');
+      } else if (state.isListening) {
+        setStatus('listening');
+      } else {
+        setStatus('online');
+      }
+    }
+
+    // ----------------------------------------------------
+    // GROQ CHAT INTEGRATION
+    // ----------------------------------------------------
+    async function sendToAI(userMessage) {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        showToast("Please save your API key in Settings.", "red");
+        return;
+      }
+
+      try {
+        const responseJson = await callGroqChat(userMessage, state.history, state.config, state.students);
+        handleAIAction(responseJson);
+      } catch (err) {
+        showToast("AI Chat Error: " + err.message, "red");
+      }
+    }
+
+    async function callGroqChat(userMessage, history, config, students) {
+      const systemPrompt = buildSystemPrompt(config, students);
+      
+      // Construct dynamic message histories. Cap at last 20 messages to optimize tokens.
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-20),
+        { role: "user", content: userMessage }
+      ];
+
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${getApiKey()}`, 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages,
+          temperature: 0.2,
+          max_tokens: 400,
+          response_format: { type: "json_object" }
+        })
+      });
+
+      if (res.status === 401) {
+        showBanner("Invalid API key detected. Please verify in Settings / ইনভ্যালিড এপিআই কি। সেটআপ চেক করুন।", "red");
+        throw new Error("Invalid API key / 401 Unauthorized.");
+      }
+
+      if (!res.ok) throw new Error(`Groq Chat API returned HTTP ${res.status}`);
+
+      const data = await res.json();
+      const content = data.choices[0].message.content;
+      
+      // Update session histories
+      state.history.push({ role: "user", content: userMessage });
+      state.history.push({ role: "assistant", content: content });
+      if (state.history.length > 30) {
+        state.history.splice(0, 2);
+      }
+      sessionStorage.setItem('srm_chat_history', JSON.stringify(state.history));
+
+      return JSON.parse(content);
+    }
+
+    function buildSystemPrompt(config, students) {
+      const recorded = {};
+      students.filter(s => s.written_marks != null || s.project_marks != null).forEach(s => {
+        recorded[s.roll_no] = { written: s.written_marks, project: s.project_marks };
+      });
+      const registry = {};
+      students.forEach(s => registry[s.roll_no] = s.name);
+
+      return `You are a helpful school teacher's assistant for recording student examination marks. Keep ALL responses under 40 words — they are spoken aloud. Support Bengali and English naturally; reply in whichever language the user uses.
+
+CURRENT SESSION:
+  Class: ${config.class} | Section: ${config.section} | Session: ${config.session}
+  Exam: ${config.exam} | Written FM: ${config.written_fm} | Project FM: ${config.project_fm}
+
+STUDENT REGISTRY (Roll→Name):
+${JSON.stringify(registry)}
+
+ALREADY RECORDED (Roll→{written,project}):
+${JSON.stringify(recorded)}
+
+YOUR RULES:
+1. Always require BOTH roll number AND name before saving any mark.
+2. VERIFICATION:
+   a) Both match → ask for marks.
+   b) Roll matches, name slightly different → "Roll [R] is registered as [CORRECT]. Did you mean [CORRECT]?"
+   c) Name matches, wrong roll → "Name [N] is Roll [CORRECT_ROLL], not [SAID_ROLL]. Confirm?"
+   d) Neither match → "No student found with Roll [R] and name [N]. Please check."
+   e) Duplicate names → "Two students named [N]: Roll [R1] and Roll [R2]. Which roll?"
+   f) Already recorded → "Roll [R] ([N]) already has [W]/[FM_W] written, [P]/[FM_P] project. Update?"
+3. MARK VALIDATION:
+   - Written: 0 to ${config.written_fm}. If exceeded → "Max written marks is ${config.written_fm}. Please re-enter."
+   - Project: 0 to ${config.project_fm}. If exceeded → "Max project marks is ${config.project_fm}. Please re-enter."
+   - Accept Bengali numerals (০-৯) and convert them.
+4. BEFORE SAVING, always confirm: "Saving [NAME], Roll [R]: Written [W]/${config.written_fm}, Project [P]/${config.project_fm}. Correct?"
+5. SAVE only when user says: yes / হ্যাঁ / okay / correct / ঠিক আছে / confirm.
+6. AFTER SAVE: "Saved! Roll [R] [NAME] recorded."
+7. RETRIEVAL: "What are marks for [N/R]?" → look up and report.
+8. EDIT: "Change written for Roll [R] to [X]" → confirm then update.
+9. REPORT: "How many recorded?" / "Who is missing?" → compute and answer.
+
+RESPOND ONLY WITH THIS JSON OBJECT (no other text):
+{
+  "speech": "What to say aloud (≤40 words)",
+  "action": "none" | "verify" | "confirm_save" | "save" | "update" | "retrieve" | "report",
+  "student_roll": null or "roll_number_string",
+  "student_name": null or "name_string",
+  "written_marks": null or number,
+  "project_marks": null or number,
+  "highlight_roll": null or "roll_to_scroll_to_in_table"
+}
+`;
+    }
+
+    // ----------------------------------------------------
+    // ACTION HANDLERS
+    // ----------------------------------------------------
+    function handleAIAction(res) {
+      appendChatBubble(res.speech, 'ai');
+      speakTTS(res.speech);
+
+      if (res.highlight_roll) {
+        targetStudentRow(res.highlight_roll);
+      }
+
+      const action = res.action;
+
+      if (action === "verify" && res.student_roll) {
+        targetStudentRow(res.student_roll);
+      } 
+      else if (action === "confirm_save") {
+        // Visual indicator that saving is pending user affirmation
+        pendingAiActionObj = res;
+        targetStudentRow(res.student_roll);
+        
+        // Append interactive confirmation buttons inside chat log
+        appendConfirmationButtons();
+      }
+      else if (action === "save" || action === "update") {
+        saveToUndoStack();
+        const stud = state.students.find(s => s.roll_no === res.student_roll);
+        if (stud) {
+          if (res.written_marks !== null) stud.written_marks = res.written_marks;
+          if (res.project_marks !== null) stud.project_marks = res.project_marks;
+          stud.conflict = false;
+          
+          calculateTotalsAndPercentages(stud);
+          saveSessionData();
+          renderSpreadsheet();
+          updateFooterAndStats();
+          
+          // Flash Row Green
+          const row = document.getElementById(`tr-student-${stud.roll_no}`);
+          if (row) {
+            row.classList.add('flash-green');
+            setTimeout(() => row.classList.remove('flash-green'), 1500);
+          }
+        }
+      }
+      else if (action === "report") {
+        updateFooterAndStats();
+      }
+    }
+
+    function appendConfirmationButtons() {
+      const bubble = document.createElement('div');
+      bubble.className = "chat-bubble chat-bubble-ai ai-confirm-bar";
+      bubble.innerHTML = `
+        <button class="btn btn-green btn-sm" onclick="processSpeechInput('Yes')">✓ Confirm / হ্যাঁ</button>
+        <button class="btn btn-red btn-sm" onclick="processSpeechInput('No')">✗ Cancel / না</button>
+      `;
+      document.getElementById('chat-history').appendChild(bubble);
+      
+      const historyEl = document.getElementById('chat-history');
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+    function executePendingSaveAction() {
+      if (!pendingAiActionObj) return;
+
+      saveToUndoStack();
+      const roll = pendingAiActionObj.student_roll;
+      const stud = state.students.find(s => s.roll_no === roll);
+
+      if (stud) {
+        if (pendingAiActionObj.written_marks !== null) stud.written_marks = pendingAiActionObj.written_marks;
+        if (pendingAiActionObj.project_marks !== null) stud.project_marks = pendingAiActionObj.project_marks;
+        stud.conflict = false;
+        
+        calculateTotalsAndPercentages(stud);
+        saveSessionData();
+        renderSpreadsheet();
+        updateFooterAndStats();
+
+        // Speak saved confirmation
+        const speechConfirm = `Saved! Roll ${roll} ${stud.name} recorded.`;
+        appendChatBubble(speechConfirm, 'ai');
+        speakTTS(speechConfirm);
+
+        // Flash Green
+        const row = document.getElementById(`tr-student-${roll}`);
+        if (row) {
+          row.classList.add('flash-green');
+          setTimeout(() => row.classList.remove('flash-green'), 1500);
+        }
+      }
+
+      pendingAiActionObj = null;
+      // Remove any interactive confirmation panels
+      document.querySelectorAll('.ai-confirm-bar').forEach(el => el.remove());
+    }
+
+    // ----------------------------------------------------
+    // UNDO ENGINE
+    // ----------------------------------------------------
+    function initUndoStack() {
+      state.undoStack = [];
+      saveToUndoStack();
+    }
+
+    function saveToUndoStack() {
+      const snapshot = JSON.stringify(state.students);
+      if (state.undoStack.length === 0 || state.undoStack[state.undoStack.length - 1] !== snapshot) {
+        state.undoStack.push(snapshot);
+        if (state.undoStack.length > 5) {
+          state.undoStack.shift();
+        }
+      }
+    }
+
+    function undo() {
+      if (state.undoStack.length > 1) {
+        state.undoStack.pop(); // Remove active state
+        const previous = JSON.parse(state.undoStack[state.undoStack.length - 1]);
+        state.students = previous;
+        saveSessionData();
+        renderSpreadsheet();
+        updateFooterAndStats();
+        showToast("Undo completed! পূর্বাবস্থায় ফিরিয়ে আনা হয়েছে।", "green");
+      } else {
+        showToast("Nothing to undo.", "amber");
+      }
+    }
+
+    // ----------------------------------------------------
+    // EXCEL EXPORTS (SHEETJS)
+    // ----------------------------------------------------
+    function exportToExcel() {
+      if (state.students.length === 0) {
+        showToast("No student records to export.", "amber");
+        return;
+      }
+
+      const config = state.config;
+      
+      const rows = [
+        ["Session:", config.session, "", "Class:", config.class, "Section:", config.section],
+        ["Exam:", config.exam, "", "Written FM:", config.written_fm, "Project FM:", config.project_fm],
+        [],
+        ["Roll No.", "Student Name", "Written (" + config.written_fm + ")", "Project (" + config.project_fm + ")",
+         "Total (" + (config.written_fm + config.project_fm) + ")", "Percentage", "Status"]
+      ];
+
+      state.students.forEach(s => rows.push([
+        s.roll_no, 
+        s.name,
+        s.written_marks ?? "—", 
+        s.project_marks ?? "—",
+        s.total ?? "—", 
+        s.percentage ? s.percentage.toFixed(1) + "%" : "—",
+        s.written_marks != null ? "Recorded" : "Pending"
+      ]));
+
+      // Class Averages Row Calculations
+      const avg = (arr, field) => {
+        const valid = arr.filter(item => item[field] != null);
+        return valid.length ? valid.reduce((sum, item) => sum + item[field], 0) / valid.length : 0;
+      };
+
+      rows.push([]);
+      rows.push([
+        "",
+        "Class Average",
+        avg(state.students, 'written_marks').toFixed(1),
+        avg(state.students, 'project_marks').toFixed(1),
+        avg(state.students, 'total').toFixed(1),
+        avg(state.students, 'percentage').toFixed(1) + "%", 
+        ""
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      
+      // Columns widths configurations
+      ws['!cols'] = [{wch:10}, {wch:25}, {wch:14}, {wch:14}, {wch:14}, {wch:12}, {wch:10}];
+      
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, config.class + "-" + config.section + " " + config.exam);
+      
+      const fileName = `Marks_${config.class}_${config.section}_${config.exam}_${config.session}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      showToast("Excel Export Complete! এক্সেল ফাইল ডাউনলোড সম্পন্ন।", "green");
+    }
+
+    // ----------------------------------------------------
+    // CONSOLE / CHAT INTERFACES
+    // ----------------------------------------------------
+    function appendChatBubble(text, sender) {
+      const container = document.getElementById('chat-history');
+      const bubble = document.createElement('div');
+      
+      bubble.className = `chat-bubble chat-bubble-${sender}`;
+      bubble.textContent = text;
+      
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function clearHistoryChat(e) {
+      e.stopPropagation();
+      document.getElementById('chat-history').innerHTML = '';
+      state.history = [];
+      sessionStorage.removeItem('srm_chat_history');
+      showToast("Chat transcript cleared.", "amber");
+    }
+
+    function toggleChatPanel() {
+      const panel = document.getElementById('chat-panel');
+      const btn = document.getElementById('btn-collapse-chat');
+      
+      if (state.chatExpanded) {
+        panel.classList.add('collapsed');
+        btn.textContent = '▲';
+        state.chatExpanded = false;
+      } else {
+        panel.classList.remove('collapsed');
+        btn.textContent = '▼';
+        state.chatExpanded = true;
+      }
+    }
+
+    function handleChatSubmit(e) {
+      if (e.key === 'Enter') {
+        submitChatMessage();
+      }
+    }
+
+    function submitChatMessage() {
+      const input = document.getElementById('chat-text-input');
+      const val = input.value.trim();
+      if (!val) return;
+
+      input.value = '';
+      processSpeechInput(val);
+    }
+
+    // ----------------------------------------------------
+    // PRINT ENGINE
+    // ----------------------------------------------------
+    function triggerPrint() {
+      const c = state.config;
+      document.getElementById('print-metadata-sub').textContent = `Class: ${c.class}-${c.section} | Session: ${c.session} | Exam: ${c.exam} | Date: ${new Date().toLocaleDateString()}`;
+      window.print();
+    }
+
+    // ----------------------------------------------------
+    // CUSTOM MODALS & TOAST DISPLAYS
+    // ----------------------------------------------------
+    function openHelpModal() {
+      document.getElementById('help-modal').classList.remove('hidden');
+    }
+
+    function closeHelpModal() {
+      document.getElementById('help-modal').classList.add('hidden');
+    }
+
+    let activeConfirmCallback = null;
+
+    function openConfirmModal(title, body, callback) {
+      document.getElementById('confirm-modal-body').textContent = body;
+      document.getElementById('btn-confirm-yes').onclick = callback;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    }
+
+    function showErrorRawModal(rawResponse) {
+      openConfirmModal(
+        "Auto-Parsing Failed / পার্সিং ত্রুটি",
+        "Could not automatically structure the image response. Enter students manually. Raw AI message for reference:\n\n" + rawResponse,
+        () => closeConfirmModal()
+      );
+    }
+
+    function showToast(message, type = 'accent') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function showBanner(message, type = 'green') {
+      const banner = document.getElementById('app-banner');
+      banner.className = `banner banner-${type}`;
+      banner.textContent = message;
+      banner.classList.remove('hidden');
+      
+      // Auto hide after 6 seconds
+      setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 6000);
+    }
+  </script>
+</body>
+</html>
