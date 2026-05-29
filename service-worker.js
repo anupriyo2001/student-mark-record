@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mark-record-v2';
+const CACHE_NAME = 'mark-record-v3';
 const ASSETS = [
   './',
   './index.html',

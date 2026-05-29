@@ -1576,9 +1576,19 @@
           <div class="chat-history" id="chat-history"></div>
 
           <!-- Live interim STT wrapper inside history -->
-          <div class="chat-input-bar">
-            <input type="text" id="chat-text-input" autocomplete="off" placeholder="Type instructions or say marks... (Enter to send)" onkeydown="handleChatSubmit(event)">
-            <button class="btn btn-accent" onclick="submitChatMessage()">Send</button>
+          <div class="chat-input-bar" style="display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--bg2);">
+            <!-- Attachment Preview Area -->
+            <div id="sidebar-chat-attachment-preview" class="hidden" style="display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; width: fit-content; max-width: 100%;">
+              <span id="sidebar-attachment-icon">📎</span>
+              <span id="sidebar-attachment-name" style="font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px; color: var(--text);">filename.txt</span>
+              <button onclick="clearSidebarChatAttachment()" style="background: none; border: none; cursor: pointer; color: var(--red); font-weight: 700; margin-left: 6px; font-size: 0.7rem;">❌</button>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+              <button class="btn btn-sm" onclick="triggerSidebarAttachmentUpload()" title="Attach PDF, Image, or TXT file" style="padding: 8px 10px; font-size: 0.95rem; border-radius: 6px;">📎</button>
+              <input type="file" id="sidebar-chat-file-input" style="display: none;" accept=".txt,.pdf,image/*" onchange="handleSidebarAttachmentSelected(this)">
+              <input type="text" id="chat-text-input" autocomplete="off" placeholder="Type instructions or say marks... (Enter to send)" onkeydown="handleChatSubmit(event)" style="flex: 1;">
+              <button class="btn btn-accent" onclick="submitChatMessage()">Send</button>
+            </div>
           </div>
         </div>
 
@@ -1650,9 +1660,19 @@
           </div>
 
           <div class="chat-input-bar no-print" style="background: var(--bg2); border-top: 1px solid var(--border); padding: 16px;">
-            <div style="max-width: 900px; width: 100%; margin: 0 auto; display: flex; gap: 12px; align-items: center;">
-              <input type="text" id="dedicated-chat-input" autocomplete="off" placeholder="Ask AI Assistant to analyze, add, delete, or edit marks... (e.g. 'Add student Roll 15 named Amit Roy')" onkeydown="handleDedicatedChatSubmit(event)" style="flex: 1; background: var(--bg3);">
-              <button class="btn btn-accent" onclick="submitDedicatedChatMessage()">Send</button>
+            <div style="max-width: 900px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 8px;">
+              <!-- Attachment Preview Area -->
+              <div id="dedicated-chat-attachment-preview" class="hidden" style="display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; width: fit-content; max-width: 100%;">
+                <span id="dedicated-attachment-icon">📎</span>
+                <span id="dedicated-attachment-name" style="font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 200px; color: var(--text);">filename.txt</span>
+                <button onclick="clearDedicatedChatAttachment()" style="background: none; border: none; cursor: pointer; color: var(--red); font-weight: 700; margin-left: 8px;">❌</button>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center; width: 100%;">
+                <button class="btn btn-sm" onclick="triggerDedicatedAttachmentUpload()" title="Attach PDF, Image, or TXT file" style="padding: 10px 14px; font-size: 1rem; border-radius: 6px;">📎</button>
+                <input type="file" id="dedicated-chat-file-input" style="display: none;" accept=".txt,.pdf,image/*" onchange="handleDedicatedAttachmentSelected(this)">
+                <input type="text" id="dedicated-chat-input" autocomplete="off" placeholder="Ask AI Assistant to analyze, add, delete, or edit marks... (e.g. 'Add student Roll 15 named Amit Roy')" onkeydown="handleDedicatedChatSubmit(event)" style="flex: 1; background: var(--bg3);">
+                <button class="btn btn-accent" onclick="submitDedicatedChatMessage()">Send</button>
+              </div>
             </div>
           </div>
         </div>
@@ -3000,7 +3020,7 @@
     // ----------------------------------------------------
     // PROCESS SPEECH & WAKE WORDS
     // ----------------------------------------------------
-    function processSpeechInput(text) {
+    function processSpeechInput(text, source = 'dedicated') {
       clearInterimSTT();
       if (!text.trim()) return;
 
@@ -3046,7 +3066,7 @@
       }
 
       // Send to Groq Chat LLM
-      sendToAI(arabicNumeralsSpeech);
+      sendToAI(arabicNumeralsSpeech, source);
     }
 
     function convertBengaliNumerals(str) {
@@ -3097,30 +3117,187 @@
 
     // ----------------------------------------------------
     // GROQ CHAT INTEGRATION
-    // ----------------------------------------------------
-    async function sendToAI(userMessage) {
+    // 📎 ATTACHMENT PROCESSING ENGINE FOR AI CHAT
+    let currentDedicatedAttachment = null;
+    let currentSidebarAttachment = null;
+
+    function triggerSidebarAttachmentUpload() {
+      document.getElementById('sidebar-chat-file-input').click();
+    }
+
+    function triggerDedicatedAttachmentUpload() {
+      document.getElementById('dedicated-chat-file-input').click();
+    }
+
+    function clearSidebarChatAttachment() {
+      currentSidebarAttachment = null;
+      document.getElementById('sidebar-chat-file-input').value = '';
+      document.getElementById('sidebar-chat-attachment-preview').classList.add('hidden');
+    }
+
+    function clearDedicatedChatAttachment() {
+      currentDedicatedAttachment = null;
+      document.getElementById('dedicated-chat-file-input').value = '';
+      document.getElementById('dedicated-chat-attachment-preview').classList.add('hidden');
+    }
+
+    async function handleSidebarAttachmentSelected(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      showToast("Processing file: " + file.name, "accent");
+      try {
+        const parsed = await processUploadedChatFile(file);
+        currentSidebarAttachment = parsed;
+        
+        document.getElementById('sidebar-attachment-name').textContent = file.name;
+        document.getElementById('sidebar-attachment-icon').textContent = getAttachmentIcon(parsed.type);
+        document.getElementById('sidebar-chat-attachment-preview').classList.remove('hidden');
+        showToast("File attached successfully! 📎", "green");
+      } catch (err) {
+        showToast("Attachment error: " + err.message, "red");
+        clearSidebarChatAttachment();
+      }
+    }
+
+    async function handleDedicatedAttachmentSelected(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      showToast("Processing file: " + file.name, "accent");
+      try {
+        const parsed = await processUploadedChatFile(file);
+        currentDedicatedAttachment = parsed;
+        
+        document.getElementById('dedicated-attachment-name').textContent = file.name;
+        document.getElementById('dedicated-attachment-icon').textContent = getAttachmentIcon(parsed.type);
+        document.getElementById('dedicated-chat-attachment-preview').classList.remove('hidden');
+        showToast("File attached successfully! 📎", "green");
+      } catch (err) {
+        showToast("Attachment error: " + err.message, "red");
+        clearDedicatedChatAttachment();
+      }
+    }
+
+    function getAttachmentIcon(type) {
+      if (type === 'image') return '🖼️';
+      if (type === 'pdf') return '📕';
+      return '📎';
+    }
+
+    async function processUploadedChatFile(file) {
+      const name = file.name;
+      const type = file.type;
+      
+      if (type.startsWith('image/')) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({ name, type: 'image', data: reader.result });
+          reader.onerror = () => reject(new Error("Failed to read image file."));
+          reader.readAsDataURL(file);
+        });
+      } else if (file.name.endsWith('.pdf')) {
+        const text = await extractTextFromPdf(file);
+        return { name, type: 'pdf', data: text };
+      } else {
+        // Assume text file for other extensions / text files
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({ name, type: 'txt', data: reader.result });
+          reader.onerror = () => reject(new Error("Failed to read text file."));
+          reader.readAsText(file);
+        });
+      }
+    }
+
+    async function extractTextFromPdf(file) {
+      if (typeof pdfjsLib === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+          script.onload = () => {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            resolve();
+          };
+          script.onerror = () => reject(new Error("Failed to load PDF extraction library."));
+          document.head.appendChild(script);
+        });
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+      }
+      
+      return fullText;
+    }
+
+    async function sendToAI(userMessage, source = 'dedicated') {
       const apiKey = getApiKey();
       if (!apiKey) {
         showToast("Please save your API key in Settings.", "red");
         return;
       }
 
+      const attachment = source === 'sidebar' ? currentSidebarAttachment : currentDedicatedAttachment;
+
       try {
-        const responseJson = await callGroqChat(userMessage, state.history, state.config, state.students);
+        const responseJson = await callGroqChat(userMessage, state.history, state.config, state.students, attachment);
         handleAIAction(responseJson);
       } catch (err) {
         showToast("AI Chat Error: " + err.message, "red");
+      } finally {
+        // Clear active attachment states upon completion
+        if (source === 'sidebar') {
+          clearSidebarChatAttachment();
+        } else {
+          clearDedicatedChatAttachment();
+        }
       }
     }
 
-    async function callGroqChat(userMessage, history, config, students) {
+    async function callGroqChat(userMessage, history, config, students, attachment = null) {
       const systemPrompt = buildSystemPrompt(config, students);
       
+      let finalUserMessage = userMessage;
+      let hasImage = false;
+      let imageBase64Url = null;
+
+      if (attachment) {
+        if (attachment.type === 'txt' || attachment.type === 'pdf') {
+          finalUserMessage = `[Attached File: ${attachment.name}]\n"""\n${attachment.data}\n"""\n\n${userMessage}`;
+        } else if (attachment.type === 'image') {
+          hasImage = true;
+          imageBase64Url = attachment.data;
+        }
+      }
+
+      // Select dynamic model: Vision model if an image is attached, versatile model otherwise.
+      const modelName = hasImage ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+
+      // Formulate standard OpenAI/Groq messages array.
+      // Vision models require the last message content to be an array structure when carrying an image.
+      const userMessageObj = { role: "user" };
+      if (hasImage) {
+        userMessageObj.content = [
+          { type: "image_url", image_url: { url: imageBase64Url } },
+          { type: "text", text: finalUserMessage }
+        ];
+      } else {
+        userMessageObj.content = finalUserMessage;
+      }
+
       // Construct dynamic message histories. Cap at last 20 messages to optimize tokens.
       const messages = [
         { role: "system", content: systemPrompt },
         ...history.slice(-20),
-        { role: "user", content: userMessage }
+        userMessageObj
       ];
 
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -3130,10 +3307,10 @@
           "Content-Type": "application/json" 
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: modelName,
           messages,
           temperature: 0.2,
-          max_tokens: 400,
+          max_tokens: 600, // Slightly increase max_tokens for complex analysis responses
           response_format: { type: "json_object" }
         })
       });
@@ -3149,7 +3326,7 @@
       const content = data.choices[0].message.content;
       
       // Update session histories
-      state.history.push({ role: "user", content: userMessage });
+      state.history.push({ role: "user", content: finalUserMessage });
       state.history.push({ role: "assistant", content: content });
       if (state.history.length > 30) {
         state.history.splice(0, 2);
@@ -3962,7 +4139,7 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
       if (!val) return;
 
       input.value = '';
-      processSpeechInput(val);
+      processSpeechInput(val, 'sidebar');
     }
     // ----------------------------------------------------
     // GOOGLE DRIVE INTEGRATION CONTROLLER
@@ -4432,7 +4609,7 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
       if (!val) return;
 
       input.value = '';
-      processSpeechInput(val);
+      processSpeechInput(val, 'dedicated');
     }
 
     function submitQuickChip(text) {
