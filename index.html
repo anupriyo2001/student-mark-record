@@ -1507,6 +1507,19 @@
         </div>
       </div>
 
+      <!-- Current Works (Local Saved Sessions) Section -->
+      <div id="local-saved-sessions-container" class="setup-step hidden" style="margin-top: 32px; border: 1px dashed var(--accent);">
+        <h2 class="step-title" style="font-size: 1.1rem; color: var(--accent); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+          📂 Current Works (Local Saved Sessions)
+        </h2>
+        <p style="font-size: 0.75rem; color: var(--text2); margin-bottom: 12px;">
+          Resume any of your active mark record sessions saved on this device. Progress is automatically backed up to Google Drive.
+        </p>
+        <div id="local-saved-sessions-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated in JS -->
+        </div>
+      </div>
+
       <!-- Large Start Button -->
       <div class="start-container">
         <button id="btn-start-session" class="btn btn-accent btn-large" disabled onclick="startVoiceSession()">
@@ -2065,6 +2078,7 @@
       return `srm_${session}_${cls}_${sec}_${ex}`;
     }
 
+    let cloudBackupTimeout = null;
     function saveSessionData() {
       if (!state.config.session || !state.config.class || !state.config.section) return;
       const key = getStorageKey(state.config);
@@ -2078,8 +2092,11 @@
       try {
         localStorage.setItem(key, JSON.stringify(dataToSave));
         
-        // Auto-backup to Google Drive if connected
-        executeCloudBackup();
+        // Debounce cloud backup to Google Drive by 5 seconds to prevent API hammering
+        if (cloudBackupTimeout) clearTimeout(cloudBackupTimeout);
+        cloudBackupTimeout = setTimeout(() => {
+          executeCloudBackup();
+        }, 5000);
       } catch (e) {
         if (e.name === 'QuotaExceededError') {
           showToast("Storage quota exceeded! Export records to Excel & clear history in Settings.", "red");
@@ -2089,16 +2106,30 @@
       }
     }
 
-    // Scans all srm_* localStorage keys to build a quick resume bar if sessions exist
+    // Scans all srm_* localStorage keys to build a quick resume bar and a full current works list
     function scanSavedSessions() {
       const keys = Object.keys(localStorage);
-      const srmKeys = keys.filter(k => k.startsWith('srm_') && k !== 'srm_api_key');
+      const srmKeys = keys.filter(k => {
+        if (!k.startsWith('srm_')) return false;
+        if (['srm_api_key', 'srm_drive_token', 'srm_drive_token_expires', 'srm_last_backup_time'].includes(k)) return false;
+        try {
+          const parsed = JSON.parse(localStorage.getItem(k));
+          return parsed && parsed.config && parsed.students;
+        } catch(e) {
+          return false;
+        }
+      });
+
+      const listContainer = document.getElementById('local-saved-sessions-container');
+      const listEl = document.getElementById('local-saved-sessions-list');
+
       if (srmKeys.length === 0) {
         document.getElementById('resume-container').classList.add('hidden');
+        if (listContainer) listContainer.classList.add('hidden');
         return;
       }
       
-      // Select the latest updated one to offer resume
+      // Select the latest updated one to offer resume at top
       srmKeys.sort((a, b) => {
         try {
           const tA = JSON.parse(localStorage.getItem(a)).config.created_at || '';
@@ -2120,24 +2151,60 @@
       } catch (e) {
         document.getElementById('resume-container').classList.add('hidden');
       }
+
+      // Render all local saved sessions list at the bottom of the home screen
+      if (listContainer && listEl) {
+        listContainer.classList.remove('hidden');
+        let html = '';
+        srmKeys.forEach(k => {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(k));
+            const conf = parsed.config;
+            const totalSaved = parsed.students.filter(s => s.written_marks != null || s.project_marks != null).length;
+            const created = conf.created_at ? new Date(conf.created_at).toLocaleString() : '—';
+            
+            html += `
+              <div class="local-session-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; gap: 12px;">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    Class ${conf.class}-${conf.section} | ${conf.exam}
+                  </div>
+                  <div style="font-size: 0.75rem; color: var(--text2); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap;">
+                    <span>Academic Year: <strong>${conf.session}</strong></span>
+                    <span>Recorded: <strong>${totalSaved} of ${conf.total_students} students</strong></span>
+                    <span>Last Saved: <strong>${created}</strong></span>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                  <button class="btn btn-sm btn-accent" onclick="resumeSavedSession('${k}')" style="padding: 4px 10px; font-size: 0.75rem;">Resume</button>
+                  <button class="btn btn-sm btn-red" onclick="clearSelectedSavedSession('${k}')" style="padding: 4px 10px; font-size: 0.75rem;">Delete</button>
+                </div>
+              </div>
+            `;
+          } catch (err) {
+            console.error("Failed to parse saved session key: " + k, err);
+          }
+        });
+        listEl.innerHTML = html;
+      }
     }
 
-    function resumeSavedSession() {
-      const key = document.getElementById('resume-container').dataset.key;
-      if (!key) return;
+    function resumeSavedSession(key) {
+      const targetKey = key || document.getElementById('resume-container').dataset.key;
+      if (!targetKey) return;
       try {
-        const parsed = JSON.parse(localStorage.getItem(key));
+        const parsed = JSON.parse(localStorage.getItem(targetKey));
         state.config = parsed.config;
         state.students = parsed.students;
         
         // Populate inputs so user returns to setup matching
-        document.getElementById('input-session').value = state.config.session;
-        document.getElementById('input-class').value = state.config.class;
-        document.getElementById('input-section').value = state.config.section;
-        document.getElementById('input-total-students').value = state.config.total_students;
-        document.getElementById('input-exam').value = state.config.exam;
-        document.getElementById('input-written-fm').value = state.config.written_fm;
-        document.getElementById('input-project-fm').value = state.config.project_fm;
+        document.getElementById('input-session').value = state.config.session || '';
+        document.getElementById('input-class').value = state.config.class || '';
+        document.getElementById('input-section').value = state.config.section || '';
+        document.getElementById('input-total-students').value = state.config.total_students || '';
+        document.getElementById('input-exam').value = state.config.exam || '1st Exam';
+        document.getElementById('input-written-fm').value = state.config.written_fm || 80;
+        document.getElementById('input-project-fm').value = state.config.project_fm || 20;
         
         showToast("Session successfully loaded! সেশন সফলভাবে লোড হয়েছে।", "green");
         
@@ -2150,11 +2217,11 @@
       }
     }
 
-    function clearSelectedSavedSession() {
-      const key = document.getElementById('resume-container').dataset.key;
-      if (!key) return;
+    function clearSelectedSavedSession(key) {
+      const targetKey = key || document.getElementById('resume-container').dataset.key;
+      if (!targetKey) return;
       openConfirmModal("Delete Saved Session / সেশন ডিলিট করুন", "Are you sure you want to permanently delete this saved session?", () => {
-        localStorage.removeItem(key);
+        localStorage.removeItem(targetKey);
         closeConfirmModal();
         scanSavedSessions();
         showToast("Session deleted. সেশন মুছে ফেলা হয়েছে।", "amber");
@@ -2635,6 +2702,7 @@
         
         // Force switch to default grid tab (Voice comand) to show the setup screen correctly
         switchCanvasTab('grid');
+        scanSavedSessions();
       } else {
         if (setupScreen) setupScreen.classList.add('hidden');
         if (canvasScreen) canvasScreen.classList.remove('hidden');
@@ -4520,12 +4588,10 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
         closeConfirmModal();
         showToast("Downloading backup...", "accent");
         
-        const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+        const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${encodeURIComponent(driveAccessToken)}`;
         
         try {
-          const res = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${driveAccessToken}` }
-          });
+          const res = await fetch(url);
           if (!res.ok) throw new Error("File download failed");
           const data = await res.json();
           
