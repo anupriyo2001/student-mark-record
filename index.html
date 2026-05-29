@@ -7,6 +7,16 @@
   <!-- Load SheetJS for Excel Exports -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
+  <meta name="theme-color" content="#0d1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mark Record">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  
   <style>
     /* ----------------------------------------------------
        PREMIUM DESIGN SYSTEM (COLORS, TYPOGRAPHY, THEME)
@@ -1317,6 +1327,10 @@
 
           <button class="btn btn-sm" onclick="openHelpModal()" title="Help Instructions">
             ❓ Help
+          </button>
+          
+          <button id="installBtn" class="hidden btn btn-accent btn-sm" onclick="triggerInstall()" title="Install Standalone App">
+            ⬇ Install App
           </button>
           
           <button class="btn btn-accent btn-sm" onclick="returnToSetup()" title="Return to Setup Configurations">
@@ -3016,6 +3030,65 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
         banner.classList.add('hidden');
       }, 6000);
     }
+  </script>
+  
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.warn('SW failed:', err));
+      });
+    }
+
+    // PWA install prompt handling
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBtn')?.classList.remove('hidden');
+    });
+    window.addEventListener('appinstalled', () => {
+      document.getElementById('installBtn')?.classList.add('hidden');
+      deferredPrompt = null;
+    });
+    function triggerInstall() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(c => {
+          if (c.outcome === 'accepted') console.log('PWA installed');
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    function generateIcons() {
+      [192, 512].forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        // Background
+        ctx.fillStyle = '#0d1117';
+        if (ctx.roundRect) {
+          ctx.roundRect(0, 0, size, size, size * 0.18);
+        } else {
+          ctx.rect(0, 0, size, size);
+        }
+        ctx.fill();
+        // Icon: graduation cap symbol
+        ctx.fillStyle = '#58a6ff';
+        ctx.font = `bold ${Math.round(size * 0.55)}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('📋', size / 2, size / 2);
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const links = document.querySelectorAll(`link[sizes="${size}x${size}"]`);
+          links.forEach(l => l.href = url);
+        });
+      });
+    }
+    window.addEventListener('load', generateIcons);
   </script>
 </body>
 </html>
