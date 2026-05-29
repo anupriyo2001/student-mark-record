@@ -952,6 +952,124 @@
     }
 
     /* ----------------------------------------------------
+       DEDICATED AI CHAT WORKSPACE & SIDEBAR STYLES
+       ---------------------------------------------------- */
+    .chat-sidebar {
+      width: 320px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .sidebar-student-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
+      cursor: pointer;
+    }
+    .sidebar-student-row:hover {
+      background: rgba(88, 166, 255, 0.05);
+      border-color: var(--accent);
+      transform: translateX(2px);
+    }
+    .sidebar-student-row.highlighted {
+      background: rgba(88, 166, 255, 0.12) !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 8px var(--accent-dim);
+    }
+    .sidebar-student-row.updated {
+      animation: flashGreen 1.5s ease-out;
+    }
+    .sidebar-student-row.deleted {
+      opacity: 0.3;
+      text-decoration: line-through;
+    }
+    
+    /* Interactive UI Chat Cards */
+    .chat-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin: 8px 0;
+      width: 100%;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      align-self: flex-start;
+    }
+    .chat-card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    .chat-card-body {
+      font-size: 0.85rem;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-card-label {
+      color: var(--text2);
+    }
+    .chat-card-value {
+      font-weight: 600;
+    }
+    .chat-card-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+    
+    /* Premium Header Tab Switcher */
+    .canvas-tab-nav {
+      display: flex;
+      gap: 6px;
+      background: var(--bg3);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .canvas-tab-nav button {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+    }
+    .canvas-tab-nav button:not(.btn-accent):hover {
+      background: var(--border2);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    /* Responsive Collapsible Sidebar */
+    @media (max-width: 768px) {
+      .chat-sidebar {
+        display: none !important;
+      }
+    }
+
+    /* ----------------------------------------------------
        MODALS, OVERLAYS & TOASTS
        ---------------------------------------------------- */
     .modal-overlay {
@@ -1311,7 +1429,7 @@
         </div>
         
         <!-- Canvas View Tab Selectors -->
-        <div class="canvas-tab-nav no-print" style="display: flex; gap: 4px; background: var(--bg3); padding: 2px; border-radius: 6px; border: 1px solid var(--border);">
+        <div class="canvas-tab-nav no-print">
           <button id="canvas-tab-btn-grid" class="btn btn-sm btn-accent" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px;" onclick="switchCanvasTab('grid')">📊 Spreadsheet Grid</button>
           <button id="canvas-tab-btn-chat" class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px; border-color: transparent; background: transparent;" onclick="switchCanvasTab('chat')">💬 AI Assistant Chat</button>
         </div>
@@ -1431,25 +1549,71 @@
       </div>
 
       <!-- DEDICATED AI CHAT ASSISTANT TAB VIEW -->
-      <div id="canvas-chat-view" class="hidden fadeIn" style="flex: 1; display: flex; flex-direction: column; height: calc(100vh - 52px); background: var(--bg);">
-        <div class="chat-history" id="dedicated-chat-history" style="flex: 1; padding: 24px; overflow-y: auto; max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
-          <!-- Mirror of conversation bubbles will render here dynamically -->
-        </div>
-
-        <!-- Quick Action Suggestion Chips -->
-        <div class="quick-action-chips no-print" style="max-width: 800px; width: 100%; margin: 0 auto; padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; border-top: 1px solid var(--border);">
-          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Who scored highest?')">🏆 Top Scorer</button>
-          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Who is missing?')">🔍 Missing Marks</button>
-          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('How many recorded?')">📊 Recorded Ratio</button>
-          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Undo last change')">⤺ Undo Last</button>
-        </div>
-
-        <div class="chat-input-bar no-print" style="background: var(--bg2); border-top: 1px solid var(--border); padding: 16px;">
-          <div style="max-width: 800px; width: 100%; margin: 0 auto; display: flex; gap: 12px; align-items: center;">
-            <input type="text" id="dedicated-chat-input" autocomplete="off" placeholder="Ask AI Assistant to analyze or edit marks... (e.g. 'Change Roll 2 written to 75')" onkeydown="handleDedicatedChatSubmit(event)" style="flex: 1; background: var(--bg3);">
-            <button class="btn btn-accent" onclick="submitDedicatedChatMessage()">Send</button>
+      <div id="canvas-chat-view" class="hidden fadeIn" style="flex: 1; display: flex; height: calc(100vh - 52px); background: var(--bg); overflow: hidden;">
+        
+        <!-- A) LEFT COLUMN: DATABASE MONITOR SIDEBAR -->
+        <div class="chat-sidebar no-print">
+          <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--bg3);">
+            <div style="font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; color: var(--accent);">
+              📊 DATABASE MONITOR
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text2); margin-top: 4px;">Real-time student registry & statistics.</p>
+          </div>
+          
+          <!-- Roster Registry Mini List -->
+          <div style="flex: 1; overflow-y: auto; padding: 12px;" id="sidebar-roster-list">
+            <!-- Rendered dynamically in JS -->
+          </div>
+          
+          <!-- Statistics Card Footer -->
+          <div style="padding: 16px; background: var(--bg3); border-top: 1px solid var(--border); font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text2); margin-bottom: 4px;">PERFORMANCE ANALYTICS</div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Recorded Roster:</span>
+              <span id="sidebar-recorded-count" style="font-weight: 700;">0 / 0</span>
+            </div>
+            <!-- Progress bar -->
+            <div style="width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 4px;">
+              <div id="sidebar-recorded-progress" style="width: 0%; height: 100%; background: var(--green); transition: width 0.3s ease;"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between;">
+              <span>Class Average:</span>
+              <span id="sidebar-avg-marks" style="font-weight: 700; color: var(--accent);">0.0%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>🏆 Highest Score:</span>
+              <span id="sidebar-highest" style="font-weight: 700; color: var(--amber);">—</span>
+            </div>
           </div>
         </div>
+
+        <!-- B) RIGHT COLUMN: CONVERSATIONAL CHAT SCREEN -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+          <!-- Dedicated chat history -->
+          <div class="chat-history" id="dedicated-chat-history" style="flex: 1; padding: 24px 32px; overflow-y: auto; max-width: 900px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+            <!-- Dynamic chat bubbles are rendered here -->
+          </div>
+
+          <!-- Quick Action Suggestion Chips -->
+          <div class="quick-action-chips no-print" style="max-width: 900px; width: 100%; margin: 0 auto; padding: 12px 32px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; border-top: 1px solid var(--border);">
+            <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Who scored highest?')">🏆 Top Scorer</button>
+            <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Who is missing?')">🔍 Missing Marks</button>
+            <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Add student Roll 15 named Amit Roy')">➕ Add Student</button>
+            <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Delete student Roll 4')">❌ Delete Student</button>
+            <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Give everyone 10 in project')">✏️ Bulk Edit</button>
+            <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Undo last change')">⤺ Undo Last</button>
+          </div>
+
+          <div class="chat-input-bar no-print" style="background: var(--bg2); border-top: 1px solid var(--border); padding: 16px;">
+            <div style="max-width: 900px; width: 100%; margin: 0 auto; display: flex; gap: 12px; align-items: center;">
+              <input type="text" id="dedicated-chat-input" autocomplete="off" placeholder="Ask AI Assistant to analyze, add, delete, or edit marks... (e.g. 'Add student Roll 15 named Amit Roy')" onkeydown="handleDedicatedChatSubmit(event)" style="flex: 1; background: var(--bg3);">
+              <button class="btn btn-accent" onclick="submitDedicatedChatMessage()">Send</button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -2380,6 +2544,9 @@
         `;
         tbody.appendChild(tr);
       });
+      
+      // Synchronize Database Monitor Sidebar
+      renderSidebarRoster();
     }
 
     function makeCellEditable(cell, rollNo, field) {
@@ -2866,7 +3033,7 @@ ALREADY RECORDED (Roll→{written,project}):
 ${JSON.stringify(recorded)}
 
 YOUR RULES:
-1. Always require BOTH roll number AND name before saving any mark.
+1. Always require BOTH roll number AND name before saving any mark, unless editing marks for an already recorded roll.
 2. VERIFICATION:
    a) Both match → ask for marks.
    b) Roll matches, name slightly different → "Roll [R] is registered as [CORRECT]. Did you mean [CORRECT]?"
@@ -2878,17 +3045,20 @@ YOUR RULES:
    - Written: 0 to ${config.written_fm}. If exceeded → "Max written marks is ${config.written_fm}. Please re-enter."
    - Project: 0 to ${config.project_fm}. If exceeded → "Max project marks is ${config.project_fm}. Please re-enter."
    - Accept Bengali numerals (০-৯) and convert them.
-4. BEFORE SAVING, always confirm: "Saving [NAME], Roll [R]: Written [W]/${config.written_fm}, Project [P]/${config.project_fm}. Correct?"
-5. SAVE only when user says: yes / হ্যাঁ / okay / correct / ঠিক আছে / confirm.
-6. AFTER SAVE: "Saved! Roll [R] [NAME] recorded."
-7. RETRIEVAL: "What are marks for [N/R]?" → look up and report.
-8. EDIT: "Change written for Roll [R] to [X]" → confirm then update.
-9. REPORT: "How many recorded?" / "Who is missing?" → compute and answer.
+4. ROSTER MANIPULATIONS (ADD / DELETE / RENAME):
+   - ADD: "Add student Roll [R] named [N]" → Return action "confirm_add" with student_roll and student_name, and speech "Add student Roll [R] [N]. Correct?"
+   - DELETE: "Delete/Remove student Roll [R]" → Find the student. Return action "confirm_delete" with student_roll and student_name, and speech "Delete student Roll [R] [N]. Correct?"
+   - RENAME: "Change name / Rename Roll [R] to [N]" → Return action "confirm_edit_name" with student_roll and student_name, and speech "Rename Roll [R] to [N]. Correct?"
+5. BEFORE SAVING marks, always confirm: "Saving [NAME], Roll [R]: Written [W]/${config.written_fm}, Project [P]/${config.project_fm}. Correct?" (Return action "confirm_save")
+6. SAVE only when user says: yes / হ্যাঁ / okay / correct / ঠিক আছে / confirm.
+7. AFTER SAVE: "Saved! Roll [R] [NAME] recorded."
+8. RETRIEVAL: "What are marks for [N/R]?" or stats lookup → look up and report. (Return action "retrieve" or "report")
+9. EDIT: "Change written for Roll [R] to [X]" → confirm then update.
 
 RESPOND ONLY WITH THIS JSON OBJECT (no other text):
 {
   "speech": "What to say aloud (≤40 words)",
-  "action": "none" | "verify" | "confirm_save" | "save" | "update" | "retrieve" | "report",
+  "action": "none" | "verify" | "confirm_save" | "confirm_add" | "confirm_delete" | "confirm_edit_name" | "save" | "update" | "add_student" | "delete_student" | "edit_student_name" | "retrieve" | "report",
   "student_roll": null or "roll_number_string",
   "student_name": null or "name_string",
   "written_marks": null or number,
@@ -2919,8 +3089,69 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
         pendingAiActionObj = res;
         targetStudentRow(res.student_roll);
         
-        // Append interactive confirmation buttons inside chat log
-        appendConfirmationButtons();
+        // Render dynamic confirmation card
+        const detailsHtml = `
+          <div class="chat-card-row"><span class="chat-card-label">Student Name:</span><span class="chat-card-value">${res.student_name || '—'}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Roll Number:</span><span class="chat-card-value" style="font-family: monospace;">#${res.student_roll}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Written Mark:</span><span class="chat-card-value">${res.written_marks !== null ? res.written_marks + ' / ' + state.config.written_fm : '—'}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Project Mark:</span><span class="chat-card-value">${res.project_marks !== null ? res.project_marks + ' / ' + state.config.project_fm : '—'}</span></div>
+        `;
+        appendRichCard("confirmation", {
+          actionTitle: "💾 Confirm Mark Entry",
+          detailsHtml
+        });
+      }
+      else if (action === "confirm_add") {
+        pendingAiActionObj = res;
+        
+        const detailsHtml = `
+          <div class="chat-card-row"><span class="chat-card-label">Action:</span><span class="chat-card-value" style="color: var(--green);">➕ Add Student to Roster</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">New Roll No:</span><span class="chat-card-value" style="font-family: monospace;">#${res.student_roll}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Student Name:</span><span class="chat-card-value">${res.student_name}</span></div>
+        `;
+        appendRichCard("confirmation", {
+          actionTitle: "➕ Confirm Add Student",
+          detailsHtml
+        });
+      }
+      else if (action === "confirm_delete") {
+        pendingAiActionObj = res;
+        
+        // Find student name if not provided
+        let targetName = res.student_name;
+        if (!targetName) {
+          const s = state.students.find(stud => stud.roll_no === res.student_roll);
+          targetName = s ? s.name : 'Unknown';
+        }
+        res.student_name = targetName;
+
+        const detailsHtml = `
+          <div class="chat-card-row"><span class="chat-card-label" style="color: var(--red);">Action:</span><span class="chat-card-value" style="color: var(--red);">❌ Delete Student from Roster</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Roll Number:</span><span class="chat-card-value" style="font-family: monospace;">#${res.student_roll}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Student Name:</span><span class="chat-card-value">${targetName}</span></div>
+        `;
+        appendRichCard("confirmation", {
+          actionTitle: "❌ Confirm Delete Student",
+          detailsHtml
+        });
+      }
+      else if (action === "confirm_edit_name") {
+        pendingAiActionObj = res;
+        
+        // Find original student
+        const s = state.students.find(stud => stud.roll_no === res.student_roll);
+        const oldName = s ? s.name : 'Unknown';
+
+        const detailsHtml = `
+          <div class="chat-card-row"><span class="chat-card-label">Action:</span><span class="chat-card-value" style="color: var(--amber);">✏️ Rename Student</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Roll Number:</span><span class="chat-card-value" style="font-family: monospace;">#${res.student_roll}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">Old Name:</span><span class="chat-card-value" style="text-decoration: line-through;">${oldName}</span></div>
+          <div class="chat-card-row"><span class="chat-card-label">New Name:</span><span class="chat-card-value" style="color: var(--accent);">${res.student_name}</span></div>
+        `;
+        appendRichCard("confirmation", {
+          actionTitle: "✏️ Confirm Student Rename",
+          detailsHtml
+        });
       }
       else if (action === "save" || action === "update") {
         saveToUndoStack();
@@ -2943,57 +3174,131 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
           }
         }
       }
+      else if (action === "add_student") {
+        executeAddStudentAction(res.student_roll, res.student_name);
+      }
+      else if (action === "delete_student") {
+        executeDeleteStudentAction(res.student_roll);
+      }
+      else if (action === "edit_student_name") {
+        executeEditStudentNameAction(res.student_roll, res.student_name);
+      }
+      else if (action === "retrieve") {
+        // Retrieve and render student profile card in chat
+        if (res.student_roll) {
+          const s = state.students.find(stud => stud.roll_no === res.student_roll);
+          if (s) {
+            appendRichCard("profile", s);
+          }
+        }
+      }
       else if (action === "report") {
         updateFooterAndStats();
+        // Generate beautiful Performance Analytics Card in-chat!
+        const total = state.students.length;
+        const recorded = state.students.filter(s => s.written_marks != null || s.project_marks != null).length;
+        const pending = total - recorded;
+        const recordedPct = total > 0 ? Math.round((recorded / total) * 100) : 0;
+        
+        const recordedStuds = state.students.filter(s => s.total != null);
+        const avgPct = recordedStuds.length ? (recordedStuds.reduce((sum, s) => sum + s.percentage, 0) / recordedStuds.length).toFixed(1) : '0.0';
+        
+        let highestText = '—';
+        let highestPct = -1;
+        recordedStuds.forEach(s => {
+          if (s.percentage > highestPct) {
+            highestPct = s.percentage;
+            highestText = `${s.percentage.toFixed(1)}% (${s.name}, Roll ${s.roll_no})`;
+          }
+        });
+
+        let lowestText = '—';
+        let lowestPct = 101;
+        recordedStuds.forEach(s => {
+          if (s.percentage < lowestPct) {
+            lowestPct = s.percentage;
+            lowestText = `${s.percentage.toFixed(1)}% (${s.name}, Roll ${s.roll_no})`;
+          }
+        });
+
+        // Let's also check if user asked about missing list
+        const textLower = res.speech.toLowerCase();
+        if (textLower.includes('missing') || textLower.includes('অনুপস্থিত') || textLower.includes('বাকি')) {
+          const missingStudents = state.students.filter(s => s.written_marks == null && s.project_marks == null);
+          appendRichCard("roster_list", {
+            title: "🔍 Pending Student Marks Registry",
+            students: missingStudents
+          });
+        } else {
+          appendRichCard("analytics", {
+            total, recorded, pending, recordedPct, avg: avgPct, highest: highestText, lowest: lowestText
+          });
+        }
       }
     }
 
     function appendConfirmationButtons() {
-      const bubble = document.createElement('div');
-      bubble.className = "chat-bubble chat-bubble-ai ai-confirm-bar";
-      bubble.innerHTML = `
-        <button class="btn btn-green btn-sm" onclick="processSpeechInput('Yes')">✓ Confirm / হ্যাঁ</button>
-        <button class="btn btn-red btn-sm" onclick="processSpeechInput('No')">✗ Cancel / না</button>
-      `;
-      document.getElementById('chat-history').appendChild(bubble);
-      
-      const historyEl = document.getElementById('chat-history');
-      historyEl.scrollTop = historyEl.scrollHeight;
+      // Obsolete - dynamic cards handle inline confirmation directly
     }
 
     function executePendingSaveAction() {
       if (!pendingAiActionObj) return;
 
-      saveToUndoStack();
-      const roll = pendingAiActionObj.student_roll;
-      const stud = state.students.find(s => s.roll_no === roll);
+      const act = pendingAiActionObj.action;
+      
+      if (act === "confirm_save") {
+        saveToUndoStack();
+        const roll = pendingAiActionObj.student_roll;
+        const stud = state.students.find(s => s.roll_no === roll);
 
-      if (stud) {
-        if (pendingAiActionObj.written_marks !== null) stud.written_marks = pendingAiActionObj.written_marks;
-        if (pendingAiActionObj.project_marks !== null) stud.project_marks = pendingAiActionObj.project_marks;
-        stud.conflict = false;
-        
-        calculateTotalsAndPercentages(stud);
-        saveSessionData();
-        renderSpreadsheet();
-        updateFooterAndStats();
+        if (stud) {
+          if (pendingAiActionObj.written_marks !== null) stud.written_marks = pendingAiActionObj.written_marks;
+          if (pendingAiActionObj.project_marks !== null) stud.project_marks = pendingAiActionObj.project_marks;
+          stud.conflict = false;
+          
+          calculateTotalsAndPercentages(stud);
+          saveSessionData();
+          renderSpreadsheet();
+          updateFooterAndStats();
 
-        // Speak saved confirmation
-        const speechConfirm = `Saved! Roll ${roll} ${stud.name} recorded.`;
-        appendChatBubble(speechConfirm, 'ai');
-        speakTTS(speechConfirm);
+          // Speak saved confirmation
+          const speechConfirm = `Saved! Roll ${roll} ${stud.name} recorded.`;
+          appendChatBubble(speechConfirm, 'ai');
+          speakTTS(speechConfirm);
 
-        // Flash Green
-        const row = document.getElementById(`tr-student-${roll}`);
-        if (row) {
-          row.classList.add('flash-green');
-          setTimeout(() => row.classList.remove('flash-green'), 1500);
+          // Flash Green
+          const row = document.getElementById(`tr-student-${roll}`);
+          if (row) {
+            row.classList.add('flash-green');
+            setTimeout(() => row.classList.remove('flash-green'), 1500);
+          }
         }
+      } 
+      else if (act === "confirm_add") {
+        executeAddStudentAction(pendingAiActionObj.student_roll, pendingAiActionObj.student_name);
+        
+        const confirmSpeech = `Added student Roll ${pendingAiActionObj.student_roll} ${pendingAiActionObj.student_name} to roster.`;
+        appendChatBubble(confirmSpeech, 'ai');
+        speakTTS(confirmSpeech);
+      }
+      else if (act === "confirm_delete") {
+        executeDeleteStudentAction(pendingAiActionObj.student_roll);
+        
+        const confirmSpeech = `Deleted student Roll ${pendingAiActionObj.student_roll} ${pendingAiActionObj.student_name}.`;
+        appendChatBubble(confirmSpeech, 'ai');
+        speakTTS(confirmSpeech);
+      }
+      else if (act === "confirm_edit_name") {
+        executeEditStudentNameAction(pendingAiActionObj.student_roll, pendingAiActionObj.student_name);
+        
+        const confirmSpeech = `Renamed Roll ${pendingAiActionObj.student_roll} to ${pendingAiActionObj.student_name}.`;
+        appendChatBubble(confirmSpeech, 'ai');
+        speakTTS(confirmSpeech);
       }
 
       pendingAiActionObj = null;
-      // Remove any interactive confirmation panels
-      document.querySelectorAll('.ai-confirm-bar').forEach(el => el.remove());
+      // Clean up confirmation bars
+      disableConfirmationCards(true);
     }
 
     // ----------------------------------------------------
@@ -3115,6 +3420,305 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
       }
     }
 
+    function appendRichCard(cardType, data) {
+      const container1 = document.getElementById('chat-history');
+      const container2 = document.getElementById('dedicated-chat-history');
+      
+      const buildCardDom = (targetContainer) => {
+        const card = document.createElement('div');
+        card.className = "chat-card fadeIn";
+        
+        if (cardType === "confirmation") {
+          // Action Confirmation Card
+          const actionTitle = data.actionTitle || "⚠️ Confirm Action";
+          card.innerHTML = `
+            <div class="chat-card-title">${actionTitle}</div>
+            <div class="chat-card-body">
+              ${data.detailsHtml}
+            </div>
+            <div class="chat-card-actions ai-confirm-bar">
+              <button class="btn btn-green btn-sm btn-confirm-yes" style="padding: 4px 10px;">✓ Confirm</button>
+              <button class="btn btn-red btn-sm btn-confirm-no" style="padding: 4px 10px;">✗ Cancel</button>
+            </div>
+          `;
+          
+          // Wire up event listeners
+          card.querySelector('.btn-confirm-yes').onclick = (e) => {
+            e.stopPropagation();
+            disableConfirmationCards(true);
+            processSpeechInput('Yes');
+          };
+          card.querySelector('.btn-confirm-no').onclick = (e) => {
+            e.stopPropagation();
+            disableConfirmationCards(false);
+            processSpeechInput('No');
+          };
+        } 
+        else if (cardType === "profile") {
+          // Student Profile Card
+          card.innerHTML = `
+            <div class="chat-card-title">👤 Student Profile: Roll ${data.roll_no}</div>
+            <div class="chat-card-body">
+              <div class="chat-card-row"><span class="chat-card-label">Name:</span><span class="chat-card-value">${data.name}</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">Written Mark:</span><span class="chat-card-value">${data.written_marks != null ? data.written_marks + ' / ' + state.config.written_fm : '—'}</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">Project Mark:</span><span class="chat-card-value">${data.project_marks != null ? data.project_marks + ' / ' + state.config.project_fm : '—'}</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">Total / Percentage:</span><span class="chat-card-value" style="color: var(--accent); font-weight: 700;">${data.total != null ? data.total + ' (' + data.percentage.toFixed(1) + '%)' : '—'}</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">Status:</span><span class="status-badge ${data.written_marks != null ? 'recorded' : 'pending'}">${data.written_marks != null ? 'Recorded' : 'Pending'}</span></div>
+            </div>
+          `;
+        } 
+        else if (cardType === "analytics") {
+          // Performance Analytics Card
+          card.innerHTML = `
+            <div class="chat-card-title">📈 Performance Analytics</div>
+            <div class="chat-card-body">
+              <div class="chat-card-row">
+                <span class="chat-card-label">Recorded Roster:</span>
+                <span class="chat-card-value">${data.recorded} / ${data.total} (${data.recordedPct}%)</span>
+              </div>
+              <div style="width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 4px 0 8px 0;">
+                <div style="width: ${data.recordedPct}%; height: 100%; background: var(--green);"></div>
+              </div>
+              <div class="chat-card-row"><span class="chat-card-label">Class Average:</span><span class="chat-card-value" style="color: var(--accent);">${data.avg}%</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">🏆 Highest Score:</span><span class="chat-card-value" style="color: var(--amber);">${data.highest}</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">Lowest Score:</span><span class="chat-card-value">${data.lowest}</span></div>
+              <div class="chat-card-row"><span class="chat-card-label">Roster Ratios:</span><span class="chat-card-value">${data.recorded} Recorded, ${data.pending} Pending</span></div>
+            </div>
+          `;
+        }
+        else if (cardType === "roster_list") {
+          // Roster lists (e.g. missing marks)
+          let rowsHtml = '';
+          if (data.students.length === 0) {
+            rowsHtml = `<tr><td colspan="3" style="text-align: center; color: var(--text3); padding: 8px;">No matching students found.</td></tr>`;
+          } else {
+            data.students.forEach(s => {
+              rowsHtml += `
+                <tr>
+                  <td style="padding: 6px 12px; font-family: monospace; font-weight: 700; color: var(--accent);">#${s.roll_no}</td>
+                  <td style="padding: 6px 12px;">${s.name}</td>
+                  <td style="padding: 6px 12px; color: var(--text2);">${s.written_marks != null ? s.written_marks : '—'} / ${s.project_marks != null ? s.project_marks : '—'}</td>
+                </tr>
+              `;
+            });
+          }
+          card.innerHTML = `
+            <div class="chat-card-title">${data.title}</div>
+            <div class="chat-card-body" style="max-height: 200px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border); background: var(--bg2); color: var(--text2);">
+                    <th style="padding: 6px 12px;">Roll</th>
+                    <th style="padding: 6px 12px;">Name</th>
+                    <th style="padding: 6px 12px;">Marks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
+        
+        return card;
+      };
+
+      if (container1) {
+        const c1 = buildCardDom(container1);
+        container1.appendChild(c1);
+        container1.scrollTop = container1.scrollHeight;
+      }
+
+      if (container2) {
+        const c2 = buildCardDom(container2);
+        container2.appendChild(c2);
+        container2.scrollTop = container2.scrollHeight;
+      }
+    }
+
+    function disableConfirmationCards(confirmed) {
+      document.querySelectorAll('.ai-confirm-bar').forEach(el => {
+        el.innerHTML = `<span style="font-size: 0.8rem; font-weight: 700; color: ${confirmed ? 'var(--green)' : 'var(--red)'};">
+          ${confirmed ? '✓ Action Confirmed & Applied / নিশ্চিত করা হয়েছে' : '✗ Action Cancelled / বাতিল করা হয়েছে'}
+        </span>`;
+        el.className = "chat-card-actions"; // Remove AI confirm bar class
+      });
+    }
+
+    function executeAddStudentAction(roll, name) {
+      if (!roll || !name) return;
+      
+      // Check if student roll already exists
+      const exists = state.students.find(s => s.roll_no === roll);
+      if (exists) {
+        showToast(`Roll ${roll} is already registered!`, "amber");
+        appendChatBubble(`Roll ${roll} is already registered as ${exists.name}.`, 'ai');
+        return;
+      }
+
+      saveToUndoStack();
+      
+      const newStudent = {
+        roll_no: roll,
+        name: name,
+        written_marks: null,
+        project_marks: null,
+        total: null,
+        percentage: null,
+        saved_at: new Date().toISOString(),
+        verified: false,
+        manually_edited: false,
+        conflict: false
+      };
+
+      state.students.push(newStudent);
+      
+      // Sort students by Roll number (numeric sort)
+      state.students.sort((a, b) => {
+        const aNum = parseInt(a.roll_no.replace(/\D/g, '')) || 0;
+        const bNum = parseInt(b.roll_no.replace(/\D/g, '')) || 0;
+        return aNum - bNum;
+      });
+
+      saveSessionData();
+      renderSpreadsheet();
+      updateFooterAndStats();
+      
+      showToast(`Student #${roll} ${name} added!`, "green");
+      
+      // Flash new row
+      setTimeout(() => {
+        const row = document.getElementById(`tr-student-${roll}`);
+        if (row) {
+          row.classList.add('flash-green');
+          setTimeout(() => row.classList.remove('flash-green'), 1500);
+        }
+      }, 100);
+    }
+
+    function executeDeleteStudentAction(roll) {
+      if (!roll) return;
+
+      const idx = state.students.findIndex(s => s.roll_no === roll);
+      if (idx === -1) {
+        showToast(`Roll ${roll} not found.`, "amber");
+        return;
+      }
+
+      saveToUndoStack();
+      
+      const deletedName = state.students[idx].name;
+      state.students.splice(idx, 1);
+
+      saveSessionData();
+      renderSpreadsheet();
+      updateFooterAndStats();
+
+      showToast(`Roll ${roll} ${deletedName} deleted from roster!`, "red");
+    }
+
+    function executeEditStudentNameAction(roll, newName) {
+      if (!roll || !newName) return;
+
+      const s = state.students.find(stud => stud.roll_no === roll);
+      if (!s) {
+        showToast(`Roll ${roll} not found.`, "amber");
+        return;
+      }
+
+      saveToUndoStack();
+      s.name = newName;
+      s.manually_edited = true;
+
+      saveSessionData();
+      renderSpreadsheet();
+      updateFooterAndStats();
+
+      showToast(`Roll ${roll} renamed to ${newName}!`, "green");
+      
+      // Flash edited row
+      const row = document.getElementById(`tr-student-${roll}`);
+      if (row) {
+        row.classList.add('flash-green');
+        setTimeout(() => row.classList.remove('flash-green'), 1500);
+      }
+    }
+
+    function renderSidebarRoster() {
+      const container = document.getElementById('sidebar-roster-list');
+      if (!container) return;
+
+      if (state.students.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text3); font-size: 0.85rem; padding: 24px;">No students registered.</div>`;
+        return;
+      }
+
+      let html = '';
+      state.students.forEach(s => {
+        const isRecorded = s.written_marks != null || s.project_marks != null;
+        const totalText = s.total != null ? `${s.total} (${s.percentage.toFixed(1)}%)` : '—';
+        const isHighlighted = state.lastEditedRoll === s.roll_no ? 'highlighted' : '';
+        const isUpdated = s.manually_edited ? 'updated' : '';
+        
+        html += `
+          <div class="sidebar-student-row ${isHighlighted} ${isUpdated}" id="sidebar-row-${s.roll_no}" onclick="targetStudentRow('${s.roll_no}')">
+            <div>
+              <div style="font-weight: 700; font-size: 0.85rem; font-family: monospace; display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--accent);">#${s.roll_no}</span>
+                <span style="color: var(--text);">${s.name}</span>
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text2); margin-top: 2px;">
+                Written: ${s.written_marks != null ? s.written_marks : '—'} | Project: ${s.project_marks != null ? s.project_marks : '—'}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 700; font-size: 0.8rem; color: var(--accent);">${totalText}</div>
+              <span class="status-badge ${isRecorded ? 'recorded' : 'pending'}" style="font-size: 0.65rem; padding: 1px 4px; margin-top: 4px;">
+                ${isRecorded ? 'Recorded' : 'Pending'}
+              </span>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+      
+      // Update statistics panel on Left Column too!
+      updateSidebarStats();
+    }
+
+    function updateSidebarStats() {
+      const recordedCountEl = document.getElementById('sidebar-recorded-count');
+      const progressBarEl = document.getElementById('sidebar-recorded-progress');
+      const avgMarksEl = document.getElementById('sidebar-avg-marks');
+      const highestEl = document.getElementById('sidebar-highest');
+
+      if (!recordedCountEl) return;
+
+      const total = state.students.length;
+      const recorded = state.students.filter(s => s.written_marks != null || s.project_marks != null).length;
+      const pct = total > 0 ? Math.round((recorded / total) * 100) : 0;
+
+      recordedCountEl.textContent = `${recorded} / ${total}`;
+      progressBarEl.style.width = `${pct}%`;
+
+      // Average marks
+      const recordedStuds = state.students.filter(s => s.total != null);
+      const avgPct = recordedStuds.length ? recordedStuds.reduce((sum, s) => sum + s.percentage, 0) / recordedStuds.length : 0;
+      avgMarksEl.textContent = `${avgPct.toFixed(1)}%`;
+
+      // Highest score calculation
+      let highestStudent = null;
+      let highestPercentage = -1;
+      recordedStuds.forEach(s => {
+        if (s.percentage > highestPercentage) {
+          highestPercentage = s.percentage;
+          highestStudent = s;
+        }
+      });
+      highestEl.textContent = highestStudent ? `${highestStudent.percentage.toFixed(1)}% (Roll ${highestStudent.roll_no})` : '—';
+    }
+
     function clearHistoryChat(e) {
       if (e) e.stopPropagation();
       document.getElementById('chat-history').innerHTML = '';
@@ -3185,6 +3789,9 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
         if (dedHistory) {
           dedHistory.scrollTop = dedHistory.scrollHeight;
         }
+        
+        // Populate and synchronize sidebar roster registry
+        renderSidebarRoster();
       }
     }
 
