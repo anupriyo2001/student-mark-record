@@ -3983,7 +3983,7 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
       
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: '846895056039-h1krvnhs7rqb0f834kvid9963198c2t8.apps.googleusercontent.com',
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
         callback: (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
             driveAccessToken = tokenResponse.access_token;
@@ -4066,7 +4066,11 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
           localStorage.removeItem('srm_drive_token_expires');
           driveAccessToken = null;
           updateDriveStatusIndicators('disconnected', 'Drive Offline ☁️');
-          return;
+          updateDriveSettingsUi();
+          throw new Error("Unauthorized token");
+        }
+        if (!res.ok) {
+          throw new Error(`Profile fetch failed: ${res.status}`);
         }
         return res.json();
       })
@@ -4074,11 +4078,14 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
         if (data) {
           driveUserEmail = data.email || null;
           driveUserName = data.name || null;
-          updateDriveSettingsUi();
         }
+        updateDriveSettingsUi();
       })
       .catch(err => {
         console.error("Error fetching user profile:", err);
+        if (driveAccessToken) {
+          updateDriveSettingsUi();
+        }
       });
     }
 
