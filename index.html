@@ -1310,6 +1310,12 @@
           Class 7-A | 1st Exam | Session: 2026-2027
         </div>
         
+        <!-- Canvas View Tab Selectors -->
+        <div class="canvas-tab-nav no-print" style="display: flex; gap: 4px; background: var(--bg3); padding: 2px; border-radius: 6px; border: 1px solid var(--border);">
+          <button id="canvas-tab-btn-grid" class="btn btn-sm btn-accent" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px;" onclick="switchCanvasTab('grid')">📊 Spreadsheet Grid</button>
+          <button id="canvas-tab-btn-chat" class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px; border-color: transparent; background: transparent;" onclick="switchCanvasTab('chat')">💬 AI Assistant Chat</button>
+        </div>
+
         <div class="top-bar-controls">
           <!-- Status Light Indicator -->
           <div class="status-indicator" title="Voice Mic Status">
@@ -1360,65 +1366,90 @@
         <div style="font-size: 1rem; color: #333;" id="print-metadata-sub"></div>
       </div>
 
-      <!-- SPREADSHEET CANVAS -->
-      <div class="spreadsheet-container">
-        <table class="marks-table" id="canvas-marks-table">
-          <thead>
-            <tr>
-              <th style="width: 50px;">#</th>
-              <th style="width: 100px;">Roll No.</th>
-              <th>Student Name</th>
-              <th style="width: 150px;" id="th-written">Written (80pts)</th>
-              <th style="width: 150px;" id="th-project">Project (20pts)</th>
-              <th style="width: 100px;">Total</th>
-              <th style="width: 100px;" class="col-pct">Percentage</th>
-              <th style="width: 150px;">Status</th>
-            </tr>
-          </thead>
-          <tbody id="canvas-marks-tbody"></tbody>
-        </table>
+      <!-- SPREADSHEET GRID TAB VIEW -->
+      <div id="canvas-grid-view" class="fadeIn" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; height: calc(100vh - 52px);">
+        <!-- SPREADSHEET CANVAS -->
+        <div class="spreadsheet-container">
+          <table class="marks-table" id="canvas-marks-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th style="width: 100px;">Roll No.</th>
+                <th>Student Name</th>
+                <th style="width: 150px;" id="th-written">Written (80pts)</th>
+                <th style="width: 150px;" id="th-project">Project (20pts)</th>
+                <th style="width: 100px;">Total</th>
+                <th style="width: 100px;" class="col-pct">Percentage</th>
+                <th style="width: 150px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="canvas-marks-tbody"></tbody>
+          </table>
 
-        <!-- Floating Jump Button -->
-        <button id="jump-to-edit-btn" class="jump-btn no-print" onclick="jumpToLastEditedRow()">
-          ↑ Jump to last edit
-        </button>
-      </div>
+          <!-- Floating Jump Button -->
+          <button id="jump-to-edit-btn" class="jump-btn no-print" onclick="jumpToLastEditedRow()">
+            ↑ Jump to last edit
+          </button>
+        </div>
 
-      <!-- STICKY TABLE FOOTER -->
-      <div class="table-footer">
-        <div id="footer-recorded">Recorded: 0 / 0</div>
-        <div id="footer-avg">Class Avg: 0.0%</div>
-        <div id="footer-highest">Highest: —</div>
-        <div id="footer-lowest">Lowest: —</div>
-      </div>
+        <!-- STICKY TABLE FOOTER -->
+        <div class="table-footer">
+          <div id="footer-recorded">Recorded: 0 / 0</div>
+          <div id="footer-avg">Class Avg: 0.0%</div>
+          <div id="footer-highest">Highest: —</div>
+          <div id="footer-lowest">Lowest: —</div>
+        </div>
 
-      <!-- CHAT PANEL -->
-      <div class="chat-panel no-print" id="chat-panel">
-        <div class="chat-header" onclick="toggleChatPanel()">
-          <div class="chat-title">
-            <span>💬 Live Audio/Chat Console</span>
+        <!-- CHAT PANEL -->
+        <div class="chat-panel no-print" id="chat-panel">
+          <div class="chat-header" onclick="toggleChatPanel()">
+            <div class="chat-title">
+              <span>💬 Live Audio/Chat Console</span>
+            </div>
+            <div class="chat-header-actions">
+              <button class="btn btn-sm btn-red" style="padding: 2px 8px; font-size: 0.75rem;" onclick="clearHistoryChat(event)">🗑️ Clear</button>
+              <button class="collapse-btn" id="btn-collapse-chat">▲</button>
+            </div>
           </div>
-          <div class="chat-header-actions">
-            <button class="btn btn-sm btn-red" style="padding: 2px 8px; font-size: 0.75rem;" onclick="clearHistoryChat(event)">🗑️ Clear</button>
-            <button class="collapse-btn" id="btn-collapse-chat">▲</button>
+          
+          <div class="chat-history" id="chat-history"></div>
+
+          <!-- Live interim STT wrapper inside history -->
+          <div class="chat-input-bar">
+            <input type="text" id="chat-text-input" autocomplete="off" placeholder="Type instructions or say marks... (Enter to send)" onkeydown="handleChatSubmit(event)">
+            <button class="btn btn-accent" onclick="submitChatMessage()">Send</button>
           </div>
         </div>
-        
-        <div class="chat-history" id="chat-history"></div>
 
-        <!-- Live interim STT wrapper inside history -->
-        <div class="chat-input-bar">
-          <input type="text" id="chat-text-input" autocomplete="off" placeholder="Type instructions or say marks... (Enter to send)" onkeydown="handleChatSubmit(event)">
-          <button class="btn btn-accent" onclick="submitChatMessage()">Send</button>
+        <!-- Floating Summary Card (collapsible, bottom-right) -->
+        <div class="floating-summary-card no-print" id="floating-summary-card">
+          <div style="font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px; color: var(--accent);">📊 Real-time Stats</div>
+          <div class="summary-row"><span>Recorded:</span><span id="float-recorded" class="summary-val">0 / 0</span></div>
+          <div class="summary-row"><span>Class Avg:</span><span id="float-avg" class="summary-val">0%</span></div>
+          <div class="summary-row"><span>🏆 Highest:</span><span id="float-highest" class="summary-val" style="font-size: 0.75rem; text-align: right;">—</span></div>
         </div>
       </div>
 
-      <!-- Floating Summary Card (collapsible, bottom-right) -->
-      <div class="floating-summary-card no-print" id="floating-summary-card">
-        <div style="font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px; color: var(--accent);">📊 Real-time Stats</div>
-        <div class="summary-row"><span>Recorded:</span><span id="float-recorded" class="summary-val">0 / 0</span></div>
-        <div class="summary-row"><span>Class Avg:</span><span id="float-avg" class="summary-val">0%</span></div>
-        <div class="summary-row"><span>🏆 Highest:</span><span id="float-highest" class="summary-val" style="font-size: 0.75rem; text-align: right;">—</span></div>
+      <!-- DEDICATED AI CHAT ASSISTANT TAB VIEW -->
+      <div id="canvas-chat-view" class="hidden fadeIn" style="flex: 1; display: flex; flex-direction: column; height: calc(100vh - 52px); background: var(--bg);">
+        <div class="chat-history" id="dedicated-chat-history" style="flex: 1; padding: 24px; overflow-y: auto; max-width: 800px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
+          <!-- Mirror of conversation bubbles will render here dynamically -->
+        </div>
+
+        <!-- Quick Action Suggestion Chips -->
+        <div class="quick-action-chips no-print" style="max-width: 800px; width: 100%; margin: 0 auto; padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; border-top: 1px solid var(--border);">
+          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Who scored highest?')">🏆 Top Scorer</button>
+          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Who is missing?')">🔍 Missing Marks</button>
+          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('How many recorded?')">📊 Recorded Ratio</button>
+          <button class="btn btn-sm" style="border-radius: 20px; padding: 4px 12px; font-weight: 500; font-size: 0.75rem;" onclick="submitQuickChip('Undo last change')">⤺ Undo Last</button>
+        </div>
+
+        <div class="chat-input-bar no-print" style="background: var(--bg2); border-top: 1px solid var(--border); padding: 16px;">
+          <div style="max-width: 800px; width: 100%; margin: 0 auto; display: flex; gap: 12px; align-items: center;">
+            <input type="text" id="dedicated-chat-input" autocomplete="off" placeholder="Ask AI Assistant to analyze or edit marks... (e.g. 'Change Roll 2 written to 75')" onkeydown="handleDedicatedChatSubmit(event)" style="flex: 1; background: var(--bg3);">
+            <button class="btn btn-accent" onclick="submitDedicatedChatMessage()">Send</button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -3061,19 +3092,33 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
     // CONSOLE / CHAT INTERFACES
     // ----------------------------------------------------
     function appendChatBubble(text, sender) {
-      const container = document.getElementById('chat-history');
-      const bubble = document.createElement('div');
+      const container1 = document.getElementById('chat-history');
+      const container2 = document.getElementById('dedicated-chat-history');
       
-      bubble.className = `chat-bubble chat-bubble-${sender}`;
-      bubble.textContent = text;
-      
-      container.appendChild(bubble);
-      container.scrollTop = container.scrollHeight;
+      const makeBubble = () => {
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble chat-bubble-${sender}`;
+        bubble.textContent = text;
+        return bubble;
+      };
+
+      if (container1) {
+        const b1 = makeBubble();
+        container1.appendChild(b1);
+        container1.scrollTop = container1.scrollHeight;
+      }
+
+      if (container2) {
+        const b2 = makeBubble();
+        container2.appendChild(b2);
+        container2.scrollTop = container2.scrollHeight;
+      }
     }
 
     function clearHistoryChat(e) {
-      e.stopPropagation();
+      if (e) e.stopPropagation();
       document.getElementById('chat-history').innerHTML = '';
+      document.getElementById('dedicated-chat-history').innerHTML = '';
       state.history = [];
       sessionStorage.removeItem('srm_chat_history');
       showToast("Chat transcript cleared.", "amber");
@@ -3107,6 +3152,59 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
 
       input.value = '';
       processSpeechInput(val);
+    }
+
+    function switchCanvasTab(tabName) {
+      const gridView = document.getElementById('canvas-grid-view');
+      const chatView = document.getElementById('canvas-chat-view');
+      const gridBtn = document.getElementById('canvas-tab-btn-grid');
+      const chatBtn = document.getElementById('canvas-tab-btn-chat');
+
+      if (tabName === 'grid') {
+        gridView.classList.remove('hidden');
+        chatView.classList.add('hidden');
+        
+        gridBtn.className = "btn btn-sm btn-accent";
+        chatBtn.className = "btn btn-sm";
+        chatBtn.style.borderColor = "transparent";
+        chatBtn.style.background = "transparent";
+        
+        renderSpreadsheet();
+        updateFooterAndStats();
+      } else {
+        gridView.classList.add('hidden');
+        chatView.classList.remove('hidden');
+        
+        chatBtn.className = "btn btn-sm btn-accent";
+        gridBtn.className = "btn btn-sm";
+        gridBtn.style.borderColor = "transparent";
+        gridBtn.style.background = "transparent";
+
+        // Scroll dedicated chat to bottom on switch
+        const dedHistory = document.getElementById('dedicated-chat-history');
+        if (dedHistory) {
+          dedHistory.scrollTop = dedHistory.scrollHeight;
+        }
+      }
+    }
+
+    function handleDedicatedChatSubmit(e) {
+      if (e.key === 'Enter') {
+        submitDedicatedChatMessage();
+      }
+    }
+
+    function submitDedicatedChatMessage() {
+      const input = document.getElementById('dedicated-chat-input');
+      const val = input.value.trim();
+      if (!val) return;
+
+      input.value = '';
+      processSpeechInput(val);
+    }
+
+    function submitQuickChip(text) {
+      processSpeechInput(text);
     }
 
     // ----------------------------------------------------
