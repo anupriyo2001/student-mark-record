@@ -537,7 +537,7 @@
     .canvas-screen {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: calc(100vh - 52px);
       overflow: hidden;
     }
 
@@ -1202,6 +1202,63 @@
 
   <div class="app-container">
 
+    <!-- STICKY TOP BAR -->
+    <div class="top-bar no-print">
+      <div class="app-brand">
+        <span id="canvas-brand-name">📋 Mark Record</span>
+      </div>
+      <div class="session-indicator hidden" id="canvas-session-header"></div>
+      
+      <!-- Canvas View Tab Selectors -->
+      <div class="canvas-tab-nav no-print">
+        <button id="canvas-tab-btn-grid" class="btn btn-sm btn-accent" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px;" onclick="switchCanvasTab('grid')">🎙️ Voice comand</button>
+        <button id="canvas-tab-btn-chat" class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px; border-color: transparent; background: transparent;" onclick="switchCanvasTab('chat')">💬 AI CHAT</button>
+      </div>
+
+      <div class="top-bar-controls">
+        <!-- Status Light Indicator -->
+        <div class="status-indicator hidden" id="mic-status-indicator" title="Voice Mic Status">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">AI Online</span>
+        </div>
+
+        <!-- Live Groq Connection Indicator -->
+        <div class="status-indicator" id="canvas-api-indicator" title="Groq API Connection">
+          <span class="status-dot" id="canvas-api-dot" style="background-color: gray;"></span>
+          <span id="canvas-api-text">Groq Checking...</span>
+        </div>
+
+        <!-- Voice Mic Trigger -->
+        <button class="mic-btn inactive hidden" id="btn-toggle-mic" onclick="toggleMicrophone()" title="Toggle Mic (🎙️)">
+          🎙️
+        </button>
+        
+        <button class="btn btn-sm hidden" id="btn-export-excel" onclick="exportToExcel()" title="Export Excel (.xlsx)">
+          📥 Export Excel
+        </button>
+
+        <button class="btn btn-sm hidden" id="btn-trigger-print" onclick="triggerPrint()" title="Print Summary Layout">
+          🖨️ Print
+        </button>
+        
+        <button class="btn btn-sm hidden" id="btn-undo" onclick="undo()" title="Undo (Ctrl+Z)">
+          ⤺ Undo
+        </button>
+
+        <button class="btn btn-sm hidden" id="btn-help-modal" onclick="openHelpModal()" title="Help Instructions">
+          ❓ Help
+        </button>
+        
+        <button id="installBtn" class="hidden btn btn-accent btn-sm" onclick="triggerInstall()" title="Install Standalone App">
+          ⬇ Install App
+        </button>
+        
+        <button class="btn btn-accent btn-sm hidden" id="btn-return-setup" onclick="returnToSetup()" title="Return to Setup Configurations">
+          ⚙️ Settings
+        </button>
+      </div>
+    </div>
+
     <!-- ----------------------------------------------------
          SCREEN 1: SETUP SCREEN
          ---------------------------------------------------- -->
@@ -1419,65 +1476,6 @@
          ---------------------------------------------------- -->
     <div id="canvas-screen" class="canvas-screen hidden">
       
-      <!-- STICKY TOP BAR -->
-      <div class="top-bar no-print">
-        <div class="app-brand">
-          <span>📋 Mark Record Canvas</span>
-        </div>
-        <div class="session-indicator" id="canvas-session-header">
-          Class 7-A | 1st Exam | Session: 2026-2027
-        </div>
-        
-        <!-- Canvas View Tab Selectors -->
-        <div class="canvas-tab-nav no-print">
-          <button id="canvas-tab-btn-grid" class="btn btn-sm btn-accent" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px;" onclick="switchCanvasTab('grid')">🎙️ Voice comand</button>
-          <button id="canvas-tab-btn-chat" class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px; border-color: transparent; background: transparent;" onclick="switchCanvasTab('chat')">💬 AI CHAT</button>
-        </div>
-
-        <div class="top-bar-controls">
-          <!-- Status Light Indicator -->
-          <div class="status-indicator" title="Voice Mic Status">
-            <span class="status-dot" id="status-dot"></span>
-            <span id="status-text">AI Online</span>
-          </div>
-
-          <!-- Live Groq Connection Indicator -->
-          <div class="status-indicator" id="canvas-api-indicator" title="Groq API Connection">
-            <span class="status-dot" id="canvas-api-dot" style="background-color: gray;"></span>
-            <span id="canvas-api-text">Groq Checking...</span>
-          </div>
-
-          <!-- Voice Mic Trigger -->
-          <button class="mic-btn inactive" id="btn-toggle-mic" onclick="toggleMicrophone()" title="Toggle Mic (🎙️)">
-            🎙️
-          </button>
-          
-          <button class="btn btn-sm" onclick="exportToExcel()" title="Export Excel (.xlsx)">
-            📥 Export Excel
-          </button>
-
-          <button class="btn btn-sm" onclick="triggerPrint()" title="Print Summary Layout">
-            🖨️ Print
-          </button>
-          
-          <button class="btn btn-sm" onclick="undo()" title="Undo (Ctrl+Z)">
-            ⤺ Undo
-          </button>
-
-          <button class="btn btn-sm" onclick="openHelpModal()" title="Help Instructions">
-            ❓ Help
-          </button>
-          
-          <button id="installBtn" class="hidden btn btn-accent btn-sm" onclick="triggerInstall()" title="Install Standalone App">
-            ⬇ Install App
-          </button>
-          
-          <button class="btn btn-accent btn-sm" onclick="returnToSetup()" title="Return to Setup Configurations">
-            ⚙️ Settings
-          </button>
-        </div>
-      </div>
-
       <!-- PRINT HEADER VIEW (Only shows in print layout) -->
       <div class="print-header hidden" style="display: none; padding: 20px; border-bottom: 2px solid #000; text-align: center;">
         <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 4px;">STUDENT MARKSHEET SUMMARY REPORT</h2>
@@ -1485,7 +1483,7 @@
       </div>
 
       <!-- SPREADSHEET GRID TAB VIEW -->
-      <div id="canvas-grid-view" class="fadeIn" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; height: calc(100vh - 52px);">
+      <div id="canvas-grid-view" class="fadeIn" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; height: 100%;">
         <!-- SPREADSHEET CANVAS -->
         <div class="spreadsheet-container">
           <table class="marks-table" id="canvas-marks-table">
@@ -1549,7 +1547,7 @@
       </div>
 
       <!-- DEDICATED AI CHAT ASSISTANT TAB VIEW -->
-      <div id="canvas-chat-view" class="hidden fadeIn" style="flex: 1; display: flex; height: calc(100vh - 52px); background: var(--bg); overflow: hidden;">
+      <div id="canvas-chat-view" class="hidden fadeIn" style="flex: 1; display: flex; height: 100%; background: var(--bg); overflow: hidden;">
         
         <!-- A) LEFT COLUMN: DATABASE MONITOR SIDEBAR -->
         <div class="chat-sidebar no-print">
@@ -2480,19 +2478,59 @@
     // SPREADSHEET CANVAS CONTROLLER & RENDERER
     // ----------------------------------------------------
     function transitionScreen() {
-      if (state.view === 'setup') {
-        document.getElementById('setup-screen').classList.remove('hidden');
-        document.getElementById('canvas-screen').classList.add('hidden');
+      const isSetup = (state.view === 'setup');
+      
+      const setupScreen = document.getElementById('setup-screen');
+      const canvasScreen = document.getElementById('canvas-screen');
+      const sessionHeader = document.getElementById('canvas-session-header');
+      const brandName = document.getElementById('canvas-brand-name');
+      
+      const micStatus = document.getElementById('mic-status-indicator');
+      const btnToggleMic = document.getElementById('btn-toggle-mic');
+      const btnExportExcel = document.getElementById('btn-export-excel');
+      const btnTriggerPrint = document.getElementById('btn-trigger-print');
+      const btnUndo = document.getElementById('btn-undo');
+      const btnHelp = document.getElementById('btn-help-modal');
+      const btnReturnSetup = document.getElementById('btn-return-setup');
+      
+      if (isSetup) {
+        if (setupScreen) setupScreen.classList.remove('hidden');
+        if (canvasScreen) canvasScreen.classList.add('hidden');
         document.body.style.overflow = 'auto';
+        
+        if (brandName) brandName.textContent = '📋 Mark Record';
+        if (sessionHeader) sessionHeader.classList.add('hidden');
+        if (micStatus) micStatus.classList.add('hidden');
+        if (btnToggleMic) btnToggleMic.classList.add('hidden');
+        if (btnExportExcel) btnExportExcel.classList.add('hidden');
+        if (btnTriggerPrint) btnTriggerPrint.classList.add('hidden');
+        if (btnUndo) btnUndo.classList.add('hidden');
+        if (btnHelp) btnHelp.classList.add('hidden');
+        if (btnReturnSetup) btnReturnSetup.classList.add('hidden');
+        
+        // Force switch to default grid tab (Voice comand) to show the setup screen correctly
+        switchCanvasTab('grid');
       } else {
-        document.getElementById('setup-screen').classList.add('hidden');
-        document.getElementById('canvas-screen').classList.remove('hidden');
+        if (setupScreen) setupScreen.classList.add('hidden');
+        if (canvasScreen) canvasScreen.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
-        // Setup table configs
+        if (brandName) brandName.textContent = '📋 Mark Record Canvas';
+        if (sessionHeader) {
+          sessionHeader.textContent = `Class ${state.config.class}-${state.config.section} | ${state.config.exam} | Session: ${state.config.session}`;
+          sessionHeader.classList.remove('hidden');
+        }
+        if (micStatus) micStatus.classList.remove('hidden');
+        if (btnToggleMic) btnToggleMic.classList.remove('hidden');
+        if (btnExportExcel) btnExportExcel.classList.remove('hidden');
+        if (btnTriggerPrint) btnTriggerPrint.classList.remove('hidden');
+        if (btnUndo) btnUndo.classList.remove('hidden');
+        if (btnHelp) btnHelp.classList.remove('hidden');
+        if (btnReturnSetup) btnReturnSetup.classList.remove('hidden');
+        
+        // Setup table headers
         document.getElementById('th-written').textContent = `Written (${state.config.written_fm}pts)`;
         document.getElementById('th-project').textContent = `Project (${state.config.project_fm}pts)`;
-        document.getElementById('canvas-session-header').textContent = `Class ${state.config.class}-${state.config.section} | ${state.config.exam} | Session: ${state.config.session}`;
         
         renderSpreadsheet();
         updateFooterAndStats();
@@ -3722,6 +3760,66 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
       highestEl.textContent = highestStudent ? `${highestStudent.percentage.toFixed(1)}% (Roll ${highestStudent.roll_no})` : '—';
     }
 
+    function switchCanvasTab(tabName) {
+      const gridView = document.getElementById('canvas-grid-view');
+      const chatView = document.getElementById('canvas-chat-view');
+      const gridBtn = document.getElementById('canvas-tab-btn-grid');
+      const chatBtn = document.getElementById('canvas-tab-btn-chat');
+      const setupScreen = document.getElementById('setup-screen');
+      const canvasScreen = document.getElementById('canvas-screen');
+
+      if (tabName === 'grid') {
+        // Deactivate Chat View
+        if (chatView) chatView.classList.add('hidden');
+        
+        if (state.view === 'setup') {
+          // If in setup mode, show setup screen and hide canvas container
+          if (setupScreen) setupScreen.classList.remove('hidden');
+          if (canvasScreen) canvasScreen.classList.add('hidden');
+          document.body.style.overflow = 'auto';
+        } else {
+          // If session is active, show canvas grid view
+          if (setupScreen) setupScreen.classList.add('hidden');
+          if (canvasScreen) canvasScreen.classList.remove('hidden');
+          if (gridView) gridView.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+          renderSpreadsheet();
+          updateFooterAndStats();
+        }
+        
+        if (gridBtn) gridBtn.className = "btn btn-sm btn-accent";
+        if (chatBtn) {
+          chatBtn.className = "btn btn-sm";
+          chatBtn.style.borderColor = "transparent";
+          chatBtn.style.background = "transparent";
+        }
+      } else {
+        // Tab name is 'chat'
+        // Hide setup screen and canvas grid view, show canvas screen and chat view
+        if (setupScreen) setupScreen.classList.add('hidden');
+        if (canvasScreen) canvasScreen.classList.remove('hidden');
+        if (gridView) gridView.classList.add('hidden');
+        if (chatView) chatView.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        if (chatBtn) chatBtn.className = "btn btn-sm btn-accent";
+        if (gridBtn) {
+          gridBtn.className = "btn btn-sm";
+          gridBtn.style.borderColor = "transparent";
+          gridBtn.style.background = "transparent";
+        }
+
+        // Scroll dedicated chat to bottom on switch
+        const dedHistory = document.getElementById('dedicated-chat-history');
+        if (dedHistory) {
+          dedHistory.scrollTop = dedHistory.scrollHeight;
+        }
+        
+        // Populate and synchronize sidebar roster registry
+        renderSidebarRoster();
+      }
+    }
+
     function clearHistoryChat(e) {
       if (e) e.stopPropagation();
       document.getElementById('chat-history').innerHTML = '';
@@ -3761,42 +3859,7 @@ RESPOND ONLY WITH THIS JSON OBJECT (no other text):
       processSpeechInput(val);
     }
 
-    function switchCanvasTab(tabName) {
-      const gridView = document.getElementById('canvas-grid-view');
-      const chatView = document.getElementById('canvas-chat-view');
-      const gridBtn = document.getElementById('canvas-tab-btn-grid');
-      const chatBtn = document.getElementById('canvas-tab-btn-chat');
 
-      if (tabName === 'grid') {
-        gridView.classList.remove('hidden');
-        chatView.classList.add('hidden');
-        
-        gridBtn.className = "btn btn-sm btn-accent";
-        chatBtn.className = "btn btn-sm";
-        chatBtn.style.borderColor = "transparent";
-        chatBtn.style.background = "transparent";
-        
-        renderSpreadsheet();
-        updateFooterAndStats();
-      } else {
-        gridView.classList.add('hidden');
-        chatView.classList.remove('hidden');
-        
-        chatBtn.className = "btn btn-sm btn-accent";
-        gridBtn.className = "btn btn-sm";
-        gridBtn.style.borderColor = "transparent";
-        gridBtn.style.background = "transparent";
-
-        // Scroll dedicated chat to bottom on switch
-        const dedHistory = document.getElementById('dedicated-chat-history');
-        if (dedHistory) {
-          dedHistory.scrollTop = dedHistory.scrollHeight;
-        }
-        
-        // Populate and synchronize sidebar roster registry
-        renderSidebarRoster();
-      }
-    }
 
     function handleDedicatedChatSubmit(e) {
       if (e.key === 'Enter') {
